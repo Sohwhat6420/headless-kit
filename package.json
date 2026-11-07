@@ -1,0 +1,12 @@
+{
+  "name": "reddit-pull",
+  "version": "0.1.0",
+  "description": "Pull public Reddit posts and comments from the Arctic Shift archive. No browser, no API key, no dependencies.",
+  "type": "module",
+  "bin": { "reddit-pull": "reddit-pull.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": "github:Sohwhat6420/reddit-pull",
+  "keywords": ["reddit", "arctic-shift", "cli", "headless", "agents"]
+}
