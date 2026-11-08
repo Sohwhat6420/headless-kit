@@ -8,8 +8,8 @@ By Ethan Soh ([Sohwhat6420](https://github.com/Sohwhat6420)).
 
 | Tool | What it does | Install | Example |
 | --- | --- | --- | --- |
-| [reddit-pull](tools/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive. Node 18+, any OS. | `git clone <this repo>` (no install step) | `node tools/reddit-pull/reddit-pull.mjs --sub hackios --comments --out ./out` |
-| [detached-run](tools/detached-run) | Starts a Windows process that outlives its launcher and never opens a window. Node 18+, Windows only. | `git clone <this repo>` (no install step) | `node tools/detached-run/detached-run.mjs start web -- node server.js` |
+| [reddit-pull](tools/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive. Node 18+, any OS. | `git clone https://github.com/Sohwhat6420/headless-kit` (no install step) | `node tools/reddit-pull/reddit-pull.mjs --sub hackios --comments --out ./out` |
+| [detached-run](tools/detached-run) | Starts a Windows process that outlives its launcher and never opens a window. Node 18+, Windows only. | `git clone https://github.com/Sohwhat6420/headless-kit` (no install step) | `node tools/detached-run/detached-run.mjs start web -- node server.js` |
 
 ## Tests
 

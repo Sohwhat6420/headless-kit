@@ -8,5 +8,5 @@
   "os": ["win32"],
   "engines": { "node": ">=18" },
   "license": "MIT",
-  "repository": "github:Sohwhat6420/detached-run"
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/detached-run" }
 }

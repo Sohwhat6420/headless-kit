@@ -23,7 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const DEFAULT_BASE = 'https://arctic-shift.photon-reddit.com/api';
-const UA = process.env.REDDIT_PULL_UA || 'reddit-pull/0.1 (+https://github.com/Sohwhat6420/reddit-pull)';
+const UA = process.env.REDDIT_PULL_UA || 'reddit-pull/0.1 (+https://github.com/Sohwhat6420/headless-kit)';
 const RETRY_MS = Number(process.env.REDDIT_PULL_RETRY_MS) || 2500;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
