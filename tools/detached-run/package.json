@@ -1,0 +1,12 @@
+{
+  "name": "detached-run",
+  "version": "0.1.0",
+  "description": "Start a long-running Windows process that outlives its launcher, with no window on the desktop. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "detached-run": "detached-run.mjs" },
+  "scripts": { "test": "node test/detached-run.test.mjs" },
+  "os": ["win32"],
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": "github:Sohwhat6420/detached-run"
+}
