@@ -14,7 +14,7 @@ node detached-run.mjs stop myjob        # kills the recorded PID and its tree, n
 node detached-run.mjs list
 ```
 
-It is a member of **headless-kit**, my set of small, windowless, agent-first tools (first published sibling: [reddit-pull](https://github.com/Sohwhat6420/reddit-pull)).
+It is part of **headless-kit** (see the repository root); sibling tool: [reddit-pull](../reddit-pull).
 
 ## The problem
 

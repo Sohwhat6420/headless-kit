@@ -7,7 +7,7 @@
 
 A single-file, zero-dependency Node CLI that pulls **public Reddit posts and comments** from the [Arctic Shift](https://github.com/ArthurHeitmann/arctic_shift) archive, with no browser, no sign-in and no Reddit API key. It filters locally and prints **one JSON line** saying what it wrote, so a script or an AI agent can check the result without parsing prose.
 
-It is the first member of **headless-kit**, my collection of small, agent-first, windowless rebuilds of GUI tools: no window, nothing that auto-starts, output as files plus a JSON line, standard library only.
+It is part of **headless-kit** (see the repository root): no window, nothing that auto-starts, output as files plus a JSON line, standard library only.
 
 ## The problem
 
@@ -98,11 +98,10 @@ This tool is a thin client for a **free, volunteer-run service**. Be a good gues
 - Resume and incremental pulls (only items newer than the last run).
 - Optional `--fields` to shrink output, and a `--format ndjson` for streaming into other tools.
 - A proxy-friendly mode and a configurable request spacing.
-- Join the rest of headless-kit when that is published.
 
 ## History
 
-Extracted from the monorepo it was first written in, with its own commit and real date (2 Nov 2026). Since then it was reshaped into an importable module with tests, JSON-line output, 429 handling and de-duplication; see [docs/HISTORY.md](docs/HISTORY.md).
+Imported into headless-kit with its full history (first commit 2 Nov 2026). Since then it was reshaped into an importable module with tests, JSON-line output, 429 handling and de-duplication; see [docs/HISTORY.md](docs/HISTORY.md).
 
 ## Licence
 

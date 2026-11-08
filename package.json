@@ -1,0 +1,9 @@
+{
+  "name": "headless-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cheap, agent-first tools that run without a browser, keys or windows.",
+  "scripts": { "test": "node scripts/run-tests.mjs" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
