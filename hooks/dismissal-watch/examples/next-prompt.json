@@ -1,0 +1,5 @@
+{
+  "session_id": "demo-session",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "ok, what about a cheap mini PC instead?"
+}

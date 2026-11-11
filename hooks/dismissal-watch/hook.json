@@ -1,0 +1,8 @@
+{
+  "Stop": [
+    { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dismissal-watch/dismissal-watch.mjs\"" }] }
+  ],
+  "UserPromptSubmit": [
+    { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dismissal-watch/dismissal-watch.mjs\"" }] }
+  ]
+}

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="774" viewBox="0 0 880 774" role="img" aria-label="presence: node --test (offline)">
+<rect x="0.5" y="0.5" width="879" height="773" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">presence: node --test (offline)</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> real phrases flip (5.611ms)</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> slash commands, bare, namespaced and wrapped (0.3065ms)</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> sentences ABOUT the phrase, and machine text, do not flip (0.4858ms)</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> both kinds in one prompt: the last wins; a future "back" does not count (0.263ms)</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> phrases can be switched off and extended (1.6314ms)</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> humanText is linear on hostile input (10.6726ms)</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> quiet hours: window, wrap past midnight, recent typing overrides (9.7221ms)</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> missing or corrupt state reads as present (fails open) (4.7571ms)</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> setPresence writes whole JSON atomically, no temp file left (9.2163ms)</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> backlog: add, count, resolve, skip bad lines (17.598ms)</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> render keeps unknown placeholders; config merges over defaults (9.5352ms)</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> SessionStart says PRESENT by default, AWAY after a flip, and unattended for headless runs (860.339</text>
+<text x="20" y="326" xml:space="preserve">  ms)</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> /away flips with a visible systemMessage; /back flips back and mentions the backlog (750.3722ms)</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a casual prompt while away does not flip back, and stays silent once the session has seen the mode</text>
+<text x="20" y="386" xml:space="preserve">   (428.6604ms)</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> onChange: another session hears about a flip at its next prompt, once (758.5659ms)</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> an empty notice suppresses the visible systemMessage but keeps the context line (197.8859ms)</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> updates "flip" keeps other sessions silent; "always" speaks every prompt (669.8908ms)</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> only the human stamps lastPromptAt: not machine tags, auto-continues or headless runs (2023.452ms)</text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> quiet hours make it away unless the human typed recently (628.4018ms)</text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> CLI: set present needs the human's words; usage errors exit 2 (1273.6877ms)</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> CLI backlog: ask, list (waiting first), resolve, unknown id exits 1 (1218.1838ms)</text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> notify command runs on a flip and on a waiting entry, with the event appended (1061.5245ms)</text>
+<text x="20" y="566" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> fails open: malformed stdin, empty stdin, other events and a broken config (917.8921ms)</text>
+<text x="20" y="586" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --help prints usage and exits 0 (205.6396ms)</text>
+<text x="20" y="606" xml:space="preserve">ℹ tests 24</text>
+<text x="20" y="626" xml:space="preserve">ℹ suites 0</text>
+<text x="20" y="646" xml:space="preserve">ℹ pass 24</text>
+<text x="20" y="666" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+<text x="20" y="686" xml:space="preserve">ℹ cancelled 0</text>
+<text x="20" y="706" xml:space="preserve">ℹ skipped 0</text>
+<text x="20" y="726" xml:space="preserve">ℹ todo 0</text>
+<text x="20" y="746" xml:space="preserve">ℹ duration_ms 11151.138</text>
+</g>
+</svg>

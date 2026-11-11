@@ -1,0 +1,6 @@
+{
+  "session_id": "demo-session",
+  "hook_event_name": "UserPromptSubmit",
+  "permission_mode": "plan",
+  "prompt": "Plan a weekly sales report tool: CSV import, a summary per region, and a CSV export."
+}

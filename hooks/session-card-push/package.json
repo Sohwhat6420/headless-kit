@@ -1,0 +1,11 @@
+{
+  "name": "session-card-push",
+  "version": "0.1.0",
+  "description": "A Claude Code PostToolUse hook that tells the model to notify the user and ask in chat when a tool leaves something (a proposal card, a refused start) that not every client shows.",
+  "type": "module",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "hooks/session-card-push" },
+  "keywords": ["claude-code", "hooks", "notifications", "remote-control", "agents"]
+}

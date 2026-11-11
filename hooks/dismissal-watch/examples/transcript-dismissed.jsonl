@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"Is it possible to run a desktop Linux on an old Android tablet?"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Unfortunately that's not feasible: the bootloader is locked and the kernel is vendor-specific, so it can't be done."}]}}

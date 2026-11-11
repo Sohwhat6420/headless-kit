@@ -16,6 +16,14 @@ npm test                                   # every tool's offline tests
 node tools/routing/model-router/model-router.mjs --help
 ```
 
+The Claude Code hooks and skills install as a plugin, in Claude Code:
+
+```text
+/plugin marketplace add Sohwhat6420/headless-kit
+/plugin install headless-kit@headless-kit
+/plugin install instruction-keeper@headless-kit
+```
+
 ## Tools
 
 | Category | Tool | What it does | Runs on |
@@ -23,6 +31,11 @@ node tools/routing/model-router/model-router.mjs --help
 | Model routing + dispatch | [model-router](tools/routing/model-router) | Ranks your model pools (subscription, API keys, free tier, local) by which one loses the most unspent allowance soonest; keeps private work on private pools; says Batch or real time. | Node 18+, any OS |
 | Model routing + dispatch | [anthropic-pool](tools/routing/anthropic-pool) | Spends Anthropic API credit from several keys, soonest-expiring first: Batch by default (half price), per-run caps, a ledger, headless agent runs with a hard budget. | Node 18+, any OS |
 | Model routing + dispatch | [cli-rotator](tools/routing/cli-rotator) | Runs a brief on one of several signed-in accounts of an agent CLI, benches an account when it hits a quota wall, and judges the run by the file it had to write. | Node 18+, any OS |
+| Claude Code hooks | [plan-depth](hooks/plan-depth) | States a plan standard when you plan, and lists what the plan is missing when Claude calls `ExitPlanMode`. Warns; never approves for you. | Claude Code, Node 18+ |
+| Claude Code hooks | [dismissal-watch](hooks/dismissal-watch) | Flags a reply that says "impossible" without having searched, and tells the model to search first. | Claude Code, Node 18+ |
+| Claude Code hooks | [presence](hooks/presence) | One present/away switch for every session: ask in chat when you are there, keep going on logged best guesses when you are not. `/away` and `/back` skills. | Claude Code, Node 18+ |
+| Claude Code hooks | [session-card-push](hooks/session-card-push) | When a tool leaves something only one client shows (a proposal card, a refused start), tells the model to notify you and ask in chat. | Claude Code, Node 18+ |
+| Claude Code hooks | [instruction-keeper](hooks/instruction-keeper) | A mod that keeps a verbatim, redacted ledger of what you asked for and checks the work has not dropped any of it. Its own plugin. | Claude Code mods |
 | Machine guards | [detached-run](tools/guards/detached-run) | Starts a Windows process that outlives its launcher and never opens a window. | Node 18+, Windows |
 | Phone + research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
 
@@ -35,6 +48,10 @@ All real runs. **model-router**: five example pools ranked for a bulk task; priv
 **cli-rotator**: the first account hits a quota wall, is benched, and the next account writes the expected file:
 
 <img src="tools/routing/cli-rotator/docs/demo.svg" alt="Terminal: cli-rotator status, then a run where account alpha prints a quota wall and is benched for two hours, and account beta writes the expected file" width="100%">
+
+**plan-depth**: the standard at plan time, the gaps at `ExitPlanMode`:
+
+<img src="hooks/plan-depth/docs/demo.svg" alt="Terminal: plan-depth injects the plan standard on a plan-mode prompt, then lists the gaps in a thin plan at ExitPlanMode without approving it" width="100%">
 
 **reddit-pull**: every r/rust post and comment since 1 Nov 2026, filtered locally:
 

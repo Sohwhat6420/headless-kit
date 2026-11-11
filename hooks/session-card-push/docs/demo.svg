@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="654" viewBox="0 0 880 654" role="img" aria-label="session-card-push: reminders after a card or a refused start">
+<rect x="0.5" y="0.5" width="879" height="653" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">session-card-push: reminders after a card or a refused start</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># the session proposed a new session: the user must click a card</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"PostToolUse","session_id":"s1","tool_name":"mcp__ccd_session__start_sess</tspan></text>
+<text x="20" y="106" xml:space="preserve">  ion","tool_input":{"initiation":"own_initiative","title":"Fix flaky login test"},"tool_response":"Pr</text>
+<text x="20" y="126" xml:space="preserve">  oposal card shown"}' | node session-card-push.mjs</text>
+<text x="20" y="146" xml:space="preserve">{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[session-card] \"Fix flaky</text>
+<text x="20" y="166" xml:space="preserve">   login test\" is now a proposal card waiting for the user's click. Cards do not show on every client</text>
+<text x="20" y="186" xml:space="preserve">   (a phone using remote control, for one), so: (1) send a notification naming it (PushNotification, i</text>
+<text x="20" y="206" xml:space="preserve">  f this session has it); (2) ask in chat with AskUserQuestion whether to start it."}}</text>
+<text x="20" y="226" xml:space="preserve"></text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#7d8590"># a start that was refused</tspan></text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"PostToolUseFailure","session_id":"s1","tool_name":"mcp__ccd_session__sta</tspan></text>
+<text x="20" y="286" xml:space="preserve">  rt_session","tool_input":{"initiation":"user_asked","title":"Nightly audit"},"error":"The start was </text>
+<text x="20" y="306" xml:space="preserve">  refused: this turn runs an automated event","is_interrupt":false}' | node session-card-push.mjs</text>
+<text x="20" y="326" xml:space="preserve">{"hookSpecificOutput":{"hookEventName":"PostToolUseFailure","additionalContext":"[session-card] Star</text>
+<text x="20" y="346" xml:space="preserve">  ting \"Nightly audit\" was refused, so it now waits on the user. Refusal notices do not show on ever</text>
+<text x="20" y="366" xml:space="preserve">  y client (a phone using remote control, for one), so reach the user where they can see it: (1) send </text>
+<text x="20" y="386" xml:space="preserve">  a notification naming it (PushNotification, if this session has it); (2) ask in chat with AskUserQue</text>
+<text x="20" y="406" xml:space="preserve">  stion. A refused start usually needs a turn the user began: if a background task or another session </text>
+<text x="20" y="426" xml:space="preserve">  began this turn, ask the user for a one-word reply rather than answering inside this turn."}}</text>
+<text x="20" y="446" xml:space="preserve"></text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#7d8590"># a start the user asked for, which simply worked</tspan></text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"PostToolUse","session_id":"s1","tool_name":"mcp__ccd_session__start_sess</tspan></text>
+<text x="20" y="506" xml:space="preserve">  ion","tool_input":{"initiation":"user_asked","title":"Docs pass"},"tool_response":"Started session 7</text>
+<text x="20" y="526" xml:space="preserve">  "}' | node session-card-push.mjs</text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#7d8590"># (no output: silent, exit 0)</tspan></text>
+<text x="20" y="566" xml:space="preserve"></text>
+<text x="20" y="586" xml:space="preserve"><tspan fill="#7d8590"># garbage in: fail open</tspan></text>
+<text x="20" y="606" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo 'not json' | node session-card-push.mjs</tspan></text>
+<text x="20" y="626" xml:space="preserve"><tspan fill="#7d8590"># (no output: silent, exit 0)</tspan></text>
+</g>
+</svg>

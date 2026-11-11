@@ -1,0 +1,25 @@
+{
+  "updates": "onChange",
+  "phrases": {
+    "enabled": true,
+    "extraAway": ["\\bheading home\\b"],
+    "extraBack": ["\\bhome now\\b"]
+  },
+  "presentNeedsWords": true,
+  "quietHours": {
+    "enabled": true,
+    "from": 23,
+    "to": 8,
+    "utcOffsetMinutes": null,
+    "activeMinutes": 30
+  },
+  "locale": "en-GB",
+  "notify": {
+    "command": ["node", "/absolute/path/to/your-notify-script.mjs"],
+    "on": ["away", "present", "waiting"],
+    "timeoutMs": 3000
+  },
+  "messages": {
+    "present": "[presence] The user is PRESENT. Ask in chat when a decision is theirs."
+  }
+}

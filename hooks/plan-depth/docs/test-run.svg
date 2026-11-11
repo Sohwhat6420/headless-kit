@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="964" height="494" viewBox="0 0 964 494" role="img" aria-label="plan-depth: node --test (offline)">
+<rect x="0.5" y="0.5" width="963" height="493" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h943a10 10 0 0 1 10 10v22h-963v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="482" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">plan-depth: node --test (offline)</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 1 - gate: a thin plan warns with systemMessage + additionalContext, never a decision</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 2 - gate: a complete plan and a trivial plan are silent</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 3 - gate: reads planFilePath when tool_input.plan is absent or empty</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 4 - gate: names exactly the missing sections</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 5 - gate: section content rules (entries, sources, table, mentions)</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 6 - gate: big plans need Context and succession; small plans do not</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 7 - config: custom sections, disabled sections, thresholds, bad file falls back</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 8 - gate: opt-in deny mode refuses ExitPlanMode, then falls back to warning</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 9 - hand-over check: needs BOTH enough compactions and enough context, warns once per session</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 10 - transcriptStats: counts a compaction marker split across the 1 MB chunk boundary exactly once</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 11 - reminder: full list on the first plan-mode human prompt, then one short line</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 12 - reminder: silent outside plan mode and for non-human prompts</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 13 - fails open: malformed, empty or unrelated input gives no output and exit 0</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 14 - performance: a 1,500-line plan is checked quickly</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 15 - --help and --check work as a CLI</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 16 - examples/config.example.json parses and drives the gate</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#7d8590"># tests 16</tspan></text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#7d8590"># pass 16</tspan></text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#7d8590"># fail 0</tspan></text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#7d8590"># duration 9.1 s</tspan></text>
+</g>
+</svg>

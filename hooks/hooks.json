@@ -1,0 +1,25 @@
+{
+  "description": "headless-kit command hooks: plan-depth, dismissal-watch, presence, session-card-push. Each fails open; see hooks/<name>/README.md.",
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-depth/plan-depth.mjs\"" }] },
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dismissal-watch/dismissal-watch.mjs\"" }] },
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "ExitPlanMode", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-depth/plan-depth.mjs\"" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "mcp__ccd_session__start_session", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-card-push/session-card-push.mjs\"", "timeout": 10 }] }
+    ],
+    "PostToolUseFailure": [
+      { "matcher": "mcp__ccd_session__start_session", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-card-push/session-card-push.mjs\"", "timeout": 10 }] }
+    ],
+    "Stop": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dismissal-watch/dismissal-watch.mjs\"" }] }
+    ]
+  }
+}

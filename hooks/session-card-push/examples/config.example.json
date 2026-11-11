@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "notifyTool": "PushNotification",
+  "askTool": "AskUserQuestion",
+  "maxChars": 2000,
+  "rules": [
+    {
+      "name": "refused",
+      "tool": "^mcp__ccd_session__start_session$",
+      "match": { "failed": true, "outputPattern": "was refused|the app refuses" },
+      "message": "[session-card] Starting \"{input.title|the session}\" was refused. Notify the user with {notifyTool} and ask in chat with {askTool}."
+    },
+    {
+      "name": "card",
+      "tool": "^mcp__ccd_session__start_session$",
+      "match": { "input": { "initiation": ["offer", "own_initiative"] } },
+      "message": "[session-card] \"{input.title|the session}\" is a card waiting for the user. Notify them with {notifyTool} and ask in chat with {askTool}."
+    },
+    {
+      "name": "pr-opened",
+      "tool": "^mcp__example_github__create_pull_request$",
+      "match": { "outputPattern": "\"number\"" },
+      "message": "[session-card] A pull request was opened. If the user is on a client without the review panel, send them the link in chat."
+    }
+  ]
+}

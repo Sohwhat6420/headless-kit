@@ -1,0 +1,19 @@
+{
+  "name": "headless-kit",
+  "owner": { "name": "headless-kit contributors" },
+  "metadata": {
+    "description": "One install for the headless-kit hooks and skills; instruction-keeper ships as its own plugin."
+  },
+  "plugins": [
+    {
+      "name": "headless-kit",
+      "source": "./",
+      "description": "Command hooks (plan-depth, dismissal-watch, presence, session-card-push) and the /away and /back skills."
+    },
+    {
+      "name": "instruction-keeper",
+      "source": "./hooks/instruction-keeper",
+      "description": "A mod that keeps a verbatim, redacted ledger of what you asked for and checks the work has not dropped any of it."
+    }
+  ]
+}

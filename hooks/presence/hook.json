@@ -1,0 +1,8 @@
+{
+  "SessionStart": [
+    { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
+  ],
+  "UserPromptSubmit": [
+    { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
+  ]
+}

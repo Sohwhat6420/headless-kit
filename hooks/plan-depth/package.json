@@ -1,0 +1,11 @@
+{
+  "name": "plan-depth",
+  "version": "0.1.0",
+  "description": "Claude Code hook: injects a plan standard in plan mode and lists the plan's missing sections at ExitPlanMode. Warns only; never auto-approves.",
+  "type": "module",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "hooks/plan-depth" },
+  "keywords": ["claude-code", "hooks", "plan-mode", "planning", "agents"]
+}

@@ -1,0 +1,18 @@
+{
+  "mode": "warn",
+  "requirePossibilityPrompt": true,
+  "deliverOnNextPrompt": true,
+  "noteMaxAgeDays": 7,
+  "message": "[dismissal-watch] The last reply said no without searching. Search first, then report what exists.",
+  "dismissalPatterns": [
+    "\\b(?:impossible|not possible|can(?:no|['’])t be done|cannot be done|not feasible|infeasible|unrealistic|not doable)\\b"
+  ],
+  "ignoreInReply": ["\\bnot (?:impossible|unrealistic|infeasible)\\b"],
+  "searchTools": {
+    "names": ["WebSearch", "WebFetch"],
+    "namePatterns": ["^mcp__.+__(?:browser_)?(?:navigate|get_page_text|read_page|fetch|web_search)$", "^mcp__(?:brave[-_]search|exa|tavily)__"],
+    "bashPatterns": ["\\bgh\\s+(?:search|api)\\b", "\\b(?:curl|wget)\\b[^\\n]*https?://"],
+    "skillPatterns": ["research"],
+    "agentBriefPatterns": ["\\bweb ?search\\b|search (?:the web|online|github|papers)"]
+  }
+}

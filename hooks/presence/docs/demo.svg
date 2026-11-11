@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1034" viewBox="0 0 880 1034" role="img" aria-label="presence: the away/back switch, piped as Claude Code would">
+<rect x="0.5" y="0.5" width="879" height="1033" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">presence: the away/back switch, piped as Claude Code would</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># a new session learns the mode (SessionStart)</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"SessionStart","session_id":"a1","source":"startup"}' | node presence.mjs</tspan></text>
+<text x="20" y="106" xml:space="preserve">{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"[presence] The user is PR</text>
+<text x="20" y="126" xml:space="preserve">  ESENT. When a decision is theirs, ask in chat and wait for the answer. \"/away\" or \"I'm going to b</text>
+<text x="20" y="146" xml:space="preserve">  ed\" switches every session to away mode."}}</text>
+<text x="20" y="166" xml:space="preserve"></text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#7d8590"># the human types /away: every session on the machine is now in away mode</tspan></text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"UserPromptSubmit","session_id":"a1","prompt":"/away  off to lunch, keep </tspan></text>
+<text x="20" y="226" xml:space="preserve">  going on the tests"}' | node presence.mjs</text>
+<text x="20" y="246" xml:space="preserve">{"systemMessage":"[presence] Away mode is on for every session. /back or \"I'm back\" to undo.","hoo</text>
+<text x="20" y="266" xml:space="preserve">  kSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"[presence] The user is AWA</text>
+<text x="20" y="286" xml:space="preserve">  Y since 11 Nov, 13:45. Do not stop to wait for answers: where a decision is theirs, pick the most li</text>
+<text x="20" y="306" xml:space="preserve">  kely answer, build on it, and log it with node \"C:/hk-demo/presence/presence.mjs\" ask --question \</text>
+<text x="20" y="326" xml:space="preserve">  "...\" --context \"...\" --assumed \"...\" --built \"...\" --reverse \"...\". Never act on a guess f</text>
+<text x="20" y="346" xml:space="preserve">  or anything irreversible (spending money, publishing, sending messages, deleting the user's data, cr</text>
+<text x="20" y="366" xml:space="preserve">  edentials): log it with --waiting and leave it. Backlog: 0 open, 0 waiting. \"/back\" or \"I'm back\</text>
+<text x="20" y="386" xml:space="preserve">  " switches back."}}</text>
+<text x="20" y="406" xml:space="preserve"></text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#7d8590"># while away, the session logs the decisions it made for the human</tspan></text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node presence.mjs ask --question "camelCase or snake_case config keys?" --assumed camelCase --buil</tspan></text>
+<text x="20" y="466" xml:space="preserve">  t config.mjs --reverse "rename the keys"</text>
+<text x="20" y="486" xml:space="preserve">{"ok":true,"id":"qmwbp2z4rqj","status":"open","backlog":{"open":1,"waiting":0}}</text>
+<text x="20" y="506" xml:space="preserve"></text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># irreversible things are never guessed: they wait</tspan></text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node presence.mjs ask --question "Publish v0.2 to npm?" --waiting</tspan></text>
+<text x="20" y="566" xml:space="preserve">{"ok":true,"id":"qmwbp2zel74","status":"waiting","backlog":{"open":1,"waiting":1}}</text>
+<text x="20" y="586" xml:space="preserve"></text>
+<text x="20" y="606" xml:space="preserve"><tspan fill="#7d8590"># a casual comment while away does not flip it back</tspan></text>
+<text x="20" y="626" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"UserPromptSubmit","session_id":"a1","prompt":"just reading the log, carr</tspan></text>
+<text x="20" y="646" xml:space="preserve">  y on"}' | node presence.mjs</text>
+<text x="20" y="666" xml:space="preserve"><tspan fill="#7d8590"># (no output: silent, exit 0)</tspan></text>
+<text x="20" y="686" xml:space="preserve"></text>
+<text x="20" y="706" xml:space="preserve"><tspan fill="#7d8590"># a clear phrase (or /back) does</tspan></text>
+<text x="20" y="726" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">echo '{"hook_event_name":"UserPromptSubmit","session_id":"a1","prompt":"ok I am back, what did you</tspan></text>
+<text x="20" y="746" xml:space="preserve">   find?"}' | node presence.mjs</text>
+<text x="20" y="766" xml:space="preserve">{"systemMessage":"[presence] Present mode is on. Away backlog: 1 open, 1 waiting.","hookSpecificOutp</text>
+<text x="20" y="786" xml:space="preserve">  ut":{"hookEventName":"UserPromptSubmit","additionalContext":"[presence] The user is PRESENT. When a </text>
+<text x="20" y="806" xml:space="preserve">  decision is theirs, ask in chat and wait for the answer. \"/away\" or \"I'm going to bed\" switches </text>
+<text x="20" y="826" xml:space="preserve">  every session to away mode. 1 open and 1 waiting question(s) in the away backlog: run /back, or node</text>
+<text x="20" y="846" xml:space="preserve">   \"C:/hk-demo/presence/presence.mjs\" backlog."}}</text>
+<text x="20" y="866" xml:space="preserve"></text>
+<text x="20" y="886" xml:space="preserve"><tspan fill="#7d8590"># /back then walks the backlog, waiting entries first</tspan></text>
+<text x="20" y="906" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node presence.mjs backlog</tspan></text>
+<text x="20" y="926" xml:space="preserve">{"ok":true,"count":2,"items":[{"id":"qmwbp2zel74","at":"2026-11-11T05:45:02.397Z","session":"","stat</text>
+<text x="20" y="946" xml:space="preserve">  us":"waiting","question":"Publish v0.2 to npm?","context":"","assumed":"","built":"","reverse":""},{</text>
+<text x="20" y="966" xml:space="preserve">  "id":"qmwbp2z4rqj","at":"2026-11-11T05:45:02.043Z","session":"","status":"open","question":"camelCas</text>
+<text x="20" y="986" xml:space="preserve">  e or snake_case config keys?","context":"","assumed":"camelCase","built":"config.mjs","reverse":"ren</text>
+<text x="20" y="1006" xml:space="preserve">  ame the keys"}]}</text>
+</g>
+</svg>

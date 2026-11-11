@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="964" height="914" viewBox="0 0 964 914" role="img" aria-label="plan-depth: the plan standard at prompt time, its gaps at ExitPlanMode">
+<rect x="0.5" y="0.5" width="963" height="913" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h943a10 10 0 0 1 10 10v22h-963v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="482" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">plan-depth: the plan standard at prompt time, its gaps at ExitPlanMode</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># Plan mode, first human prompt of the session: the standard is injected as context</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node plan-depth.mjs &lt; examples/prompt-plan-mode.json</tspan></text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#7d8590"># stdout, decoded for reading (exit 0):</tspan></text>
+<text x="20" y="126" xml:space="preserve">hookSpecificOutput.hookEventName: UserPromptSubmit</text>
+<text x="20" y="146" xml:space="preserve">hookSpecificOutput.additionalContext:</text>
+<text x="20" y="166" xml:space="preserve">  [plan-depth] Plan mode: a plan with 3+ tasks or features needs:</text>
+<text x="20" y="186" xml:space="preserve">  1 How: numbered build steps under every feature (files, the code reused with path:line, commands, formats)</text>
+<text x="20" y="206" xml:space="preserve">  2 Verification log: every claim the plan depends on, marked confirmed, refuted or unclear, with evidence (a </text>
+<text x="20" y="226" xml:space="preserve">  URL, a path:line or a probe)</text>
+<text x="20" y="246" xml:space="preserve">  3 Unknowns -&gt; tests: every unknown becomes a scheduled test with a pass threshold</text>
+<text x="20" y="266" xml:space="preserve">  4 Questions log: the decision-maker's answers word for word, or a "no open decisions" line</text>
+<text x="20" y="286" xml:space="preserve">  5 Independent review: a fresh reviewer checks the plan before it is presented; record it in a "Reviewed-by:"</text>
+<text x="20" y="306" xml:space="preserve">   line</text>
+<text x="20" y="326" xml:space="preserve">  6 Dispatch plan: a table: each stage, who does it, where it runs, a reason for every manual row; and a load </text>
+<text x="20" y="346" xml:space="preserve">  line per phase</text>
+<text x="20" y="366" xml:space="preserve">  7 Prior art: what already exists (docs, packages, GitHub) and what is reused or rejected, and why</text>
+<text x="20" y="386" xml:space="preserve">  8 Coverage checklist: safety, privacy, security, portability, failure modes, rollback, cost, host impact, ob</text>
+<text x="20" y="406" xml:space="preserve">  servability, tests, manual steps, records, clean-up, follow-ups: each covered or N/A with a reason</text>
+<text x="20" y="426" xml:space="preserve">  A big plan (more than 10 stages or 800 lines) also needs:</text>
+<text x="20" y="446" xml:space="preserve">  9 Context and succession: the measured context baseline of a fresh session, a rough context cost per stage, </text>
+<text x="20" y="466" xml:space="preserve">  the named hand-over points, and where each stage runs (this session, a successor session, a subagent)</text>
+<text x="20" y="486" xml:space="preserve"></text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#7d8590"># ExitPlanMode on a thin plan: each gap is listed (its one-line systemMessage is omitted here).</tspan></text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># Warn only: there is no permissionDecision, so the user still approves the plan as usual.</tspan></text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node plan-depth.mjs &lt; examples/exit-plan-thin.json</tspan></text>
+<text x="20" y="566" xml:space="preserve"><tspan fill="#7d8590"># stdout, decoded for reading (exit 0):</tspan></text>
+<text x="20" y="586" xml:space="preserve">hookSpecificOutput.hookEventName: PreToolUse</text>
+<text x="20" y="606" xml:space="preserve">hookSpecificOutput.additionalContext:</text>
+<text x="20" y="626" xml:space="preserve">  [plan-depth] The plan is missing:</text>
+<text x="20" y="646" xml:space="preserve">  - How (numbered build steps) for: Data import; Summary report; CSV export</text>
+<text x="20" y="666" xml:space="preserve">  - Verification log section</text>
+<text x="20" y="686" xml:space="preserve">  - Unknowns -&gt; tests section</text>
+<text x="20" y="706" xml:space="preserve">  - Questions log section (or a "no open decisions" line)</text>
+<text x="20" y="726" xml:space="preserve">  - Independent review (a "Reviewed-by:" line)</text>
+<text x="20" y="746" xml:space="preserve">  - Dispatch plan section</text>
+<text x="20" y="766" xml:space="preserve">  - Prior art section</text>
+<text x="20" y="786" xml:space="preserve">  - Coverage checklist section</text>
+<text x="20" y="806" xml:space="preserve">  Fix these or say why each doesn't apply, then present again. (Warn only; nothing is blocked.)</text>
+<text x="20" y="826" xml:space="preserve"></text>
+<text x="20" y="846" xml:space="preserve"><tspan fill="#7d8590"># A plan that meets the standard: no gaps (as a hook it prints nothing at all)</tspan></text>
+<text x="20" y="866" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node plan-depth.mjs --check test/fixtures/full.md</tspan></text>
+<text x="20" y="886" xml:space="preserve">{"gaps":[]}</text>
+</g>
+</svg>

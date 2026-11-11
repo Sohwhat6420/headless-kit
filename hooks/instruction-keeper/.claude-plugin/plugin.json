@@ -1,0 +1,10 @@
+{
+  "name": "instruction-keeper",
+  "version": "0.1.0",
+  "description": "A Claude Code mod that keeps a verbatim, redacted ledger of what you asked for and checks now and then that the work has not dropped any of it.",
+  "author": { "name": "headless-kit contributors" },
+  "license": "MIT",
+  "repository": "https://github.com/Sohwhat6420/headless-kit",
+  "homepage": "https://github.com/Sohwhat6420/headless-kit/tree/main/hooks/instruction-keeper",
+  "keywords": ["mod", "hooks", "instructions", "compaction", "ledger", "agents"]
+}

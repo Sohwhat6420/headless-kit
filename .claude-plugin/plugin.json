@@ -1,0 +1,11 @@
+{
+  "name": "headless-kit",
+  "version": "0.2.0",
+  "description": "Zero-dependency tools and Claude Code hooks for people who run AI agents: model routing and dispatch, session hooks, machine guards and research helpers.",
+  "author": { "name": "headless-kit contributors" },
+  "license": "MIT",
+  "repository": "https://github.com/Sohwhat6420/headless-kit",
+  "homepage": "https://github.com/Sohwhat6420/headless-kit",
+  "keywords": ["agents", "hooks", "routing", "dispatch", "guards", "zero-dependency"],
+  "skills": ["./hooks/presence/skills/"]
+}

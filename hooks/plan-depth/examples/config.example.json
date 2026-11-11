@@ -1,0 +1,55 @@
+{
+  "thresholds": { "minHeadings": 3, "minLines": 60, "bigStages": 10, "bigLines": 800 },
+  "reminder": { "enabled": true, "fullOncePerSession": true, "requirePromptId": false },
+  "gate": { "enabled": true, "onGaps": "warn", "maxDenialsPerSession": 2, "systemMessageMax": 600 },
+  "handover": {
+    "enabled": true,
+    "minCompactions": 3,
+    "minContextTokens": 160000,
+    "skipIfFirstPromptMatches": "HANDOVER\\.md",
+    "message": "Consider handing execution to a fresh session after approval"
+  },
+  "disabledSections": ["dispatch"],
+  "sections": [
+    {
+      "id": "how", "title": "How", "kind": "perFeature", "appliesTo": "standard",
+      "hint": "numbered build steps under every feature",
+      "featureLevel": 3, "stepPattern": "^\\s*\\d+\\.\\s|How\\s*:"
+    },
+    {
+      "id": "verification", "title": "Verification log", "heading": "Verification log", "appliesTo": "standard",
+      "hint": "each claim marked confirmed, refuted or unclear, with a URL, a path:line or a probe",
+      "minEntries": { "count": 3, "mustMatch": ["\\b(confirmed|refuted|unclear)\\b", "https?://|\\.\\w+:\\d+|\\bprobe\\b"], "describe": "have a verdict plus evidence" }
+    },
+    {
+      "id": "risks", "title": "Risks", "heading": "Risks", "appliesTo": "standard",
+      "hint": "what could go wrong and the mitigation for each"
+    },
+    {
+      "id": "questions", "title": "Questions log", "heading": "Questions log", "appliesTo": "standard",
+      "satisfiedBy": "no open decisions", "hint": "answers word for word, or a \"no open decisions\" line"
+    },
+    {
+      "id": "review", "title": "Independent review", "kind": "line", "appliesTo": "standard",
+      "pattern": "^\\s*\\**Reviewed-by:", "missing": "a \"Reviewed-by:\" line", "hint": "a second reader checks the plan"
+    },
+    {
+      "id": "dispatch", "title": "Dispatch plan", "heading": "Dispatch plan", "appliesTo": "standard",
+      "hint": "a table: stage, owner, where it runs, reason for manual rows",
+      "table": { "minRows": 1, "requiredColumns": [1, 2], "reasonColumn": "why|reason", "reasonWhen": "manual" }
+    },
+    {
+      "id": "prior", "title": "Prior art", "heading": "Prior art", "appliesTo": "standard",
+      "hint": "what already exists, reused or rejected",
+      "minSources": { "count": 3, "escape": "searched .{0,200}nothing relevant" }
+    },
+    {
+      "id": "succession", "title": "Context and succession", "heading": "Context and succession", "appliesTo": "big",
+      "hint": "context baseline, cost per stage, hand-over points, where each stage runs",
+      "mustMention": [
+        { "name": "context baseline", "pattern": "\\d[\\d,.]*\\s*(?:k\\b|tokens?\\b)" },
+        { "name": "hand-over points", "pattern": "\\bhand[\\s-]*(?:over|off)\\b" }
+      ]
+    }
+  ]
+}

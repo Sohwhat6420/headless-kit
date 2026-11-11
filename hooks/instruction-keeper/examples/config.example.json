@@ -1,0 +1,14 @@
+{
+  "check": { "minToolCalls": 8, "rateLimitMinutes": 10, "maxItems": 5 },
+  "costGuard": { "usageFile": "~/.claude/headless-kit/usage.json", "window": "seven_day", "windowHours": 168 },
+  "nudge": {
+    "enabled": true,
+    "threshold": 25,
+    "readTools": ["Read", "Grep", "Glob", "WebFetch"],
+    "resetTools": ["Agent", "Workflow"],
+    "resetBash": ["\\bmy-dispatcher\\b"],
+    "text": "Delegation check: {count} read-only calls in a row in the main conversation. Hand the rest to a subagent, or say in one line why doing it here is better."
+  },
+  "ledger": { "ignorePrefixes": ["[bot]"], "redact": ["\\bacct-[0-9]{6}\\b"] },
+  "records": { "usage": true, "nudges": true }
+}

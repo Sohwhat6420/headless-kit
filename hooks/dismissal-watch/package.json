@@ -1,0 +1,11 @@
+{
+  "name": "dismissal-watch",
+  "version": "0.1.0",
+  "description": "Claude Code Stop hook: warns when the final reply calls an idea impossible or not feasible and the turn ran no search. Warn-only by default.",
+  "type": "module",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "hooks/dismissal-watch" },
+  "keywords": ["claude-code", "hooks", "stop-hook", "research", "agents"]
+}

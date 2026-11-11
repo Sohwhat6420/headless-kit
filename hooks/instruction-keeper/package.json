@@ -1,0 +1,15 @@
+{
+  "name": "instruction-keeper",
+  "version": "0.1.0",
+  "description": "A Claude Code mod that keeps a verbatim, redacted ledger of what you asked for and checks now and then that the work has not dropped any of it.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/core.test.mjs test/examples.test.mjs test/mod.test.mjs",
+    "test:engine": "claude plugin test .",
+    "demo": "node examples/demo-session.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "hooks/instruction-keeper" },
+  "keywords": ["claude-code", "mod", "hooks", "instructions", "compaction", "agents"]
+}

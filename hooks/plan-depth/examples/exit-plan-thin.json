@@ -1,0 +1,7 @@
+{
+  "session_id": "demo-session",
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "plan",
+  "tool_name": "ExitPlanMode",
+  "tool_input": { "planFilePath": "test/fixtures/thin.md" }
+}

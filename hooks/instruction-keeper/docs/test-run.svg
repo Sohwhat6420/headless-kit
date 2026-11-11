@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="554" viewBox="0 0 880 554" role="img" aria-label="instruction-keeper: offline tests">
+<rect x="0.5" y="0.5" width="879" height="553" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">instruction-keeper: offline tests</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">npm test        # node --test, Node 18+, no dependencies</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 1 - redact: known token shapes and NAME=value lines, prefixes kept</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 2 - redact: extra patterns from config; a bad pattern is ignored, not thrown</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 3 - clean: redacts, then caps one entry at 20,000 characters</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 4 - isHumanPrompt and promptKind: source filtering</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 5 - appendEntries: numbering, blank skip, entry cap and total-character cap</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 6 - touchIndex and staleSessions: at most 8 ledgers, 7-day sweep</text>
+<text x="20" y="206" xml:space="preserve">  ... 39 more ok lines (core logic, examples, register.ts through a stand-in engine) ...</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 46 - mod: a prompt typed during a turn is stored as midturn</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 47 - mod: the ledger is bounded and stale ledgers are swept at session start</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 48 - mod: a failing store never blocks: the prompt and the tool call still pass through</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#7d8590"># tests 48</tspan></text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#7d8590"># pass 48</tspan></text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#7d8590"># fail 0</tspan></text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#7d8590"># duration_ms 711.2737</tspan></text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">claude plugin test .   # the same mod in Claude Code's own mod test kit</tspan></text>
+<text x="20" y="386" xml:space="preserve">(pass) a planted unaddressed instruction gives one open item and "1 open" [144.05ms]</text>
+<text x="20" y="406" xml:space="preserve">(pass) an empty array gives 0 items and clears the status [73.66ms]</text>
+<text x="20" y="426" xml:space="preserve">(pass) 25 read-only calls give exactly one nudge, the 26th none [65.85ms]</text>
+<text x="20" y="446" xml:space="preserve">  ... 14 more (pass) lines ...</text>
+<text x="20" y="466" xml:space="preserve"> 17 pass</text>
+<text x="20" y="486" xml:space="preserve"> 0 fail</text>
+<text x="20" y="506" xml:space="preserve">Ran 17 tests across 1 file. [1.56s]</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># real runs, v22.17.0, Claude Code 2.1.322, offline, 11 Nov 2026</tspan></text>
+</g>
+</svg>
