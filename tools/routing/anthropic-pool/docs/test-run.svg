@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="554" viewBox="0 0 880 554" role="img" aria-label="anthropic-pool: node --test">
+<rect x="0.5" y="0.5" width="879" height="553" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">anthropic-pool: node --test</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 1 - cycle: starts on the reset day, clamps to short months, honours the time zone</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 2 - pool choice: the soonest-expiring ready pool, falling back when it has no key, no credit or n</text>
+<text x="20" y="126" xml:space="preserve">  o free slot</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 3 - costOf: half price for batches, cache writes split 5 min / 1 h</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 4 - budget refusals exit 3: a spent pool, and a worst case over the cap</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 5 - --dry-run: every check, no network, says batch or real-time</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 6 - batch path end to end: create, poll, results, one ledger row at half price</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 7 - --now goes real-time at full price; so does a cycle ending within 26 h</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 8 - a batch that outlives --wait-min is recorded as pending, reserved, then collected once</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 9 - --jsonl sends many prompts as ONE batch; a failed request is reported per custom_id</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 10 - --mcp-config: a clean config is passed last as an absolute path; credential-looking ones are</text>
+<text x="20" y="306" xml:space="preserve">   refused</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 11 - positive controls: the rejection check notices an accepted or leaky result, and a tool with </text>
+<text x="20" y="346" xml:space="preserve">  the check removed fails the cases</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 12 - --print-args prints the claude argv and touches no pool, key or ledger</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 13 - agent run: the key reaches only the child, through an env allow-list; the cost is booked</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 14 - configuration errors exit 2: plain http to a remote host, a key pasted into key_env</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 15 - no key value ever appears in stdout, stderr, the ledger or any run file</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#7d8590"># tests 15</tspan></text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#7d8590"># pass 15</tspan></text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#7d8590"># fail 0</tspan></text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#7d8590"># duration_ms 4484.0495</tspan></text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># offline: a local stub of the Messages and Batches API, a fake claude script, made-up keys</tspan></text>
+</g>
+</svg>

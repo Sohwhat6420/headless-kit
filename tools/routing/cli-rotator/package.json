@@ -1,0 +1,12 @@
+{
+  "name": "cli-rotator",
+  "version": "0.1.0",
+  "description": "Run a brief on one of several accounts of a coding-agent CLI (Gemini CLI, Codex, Claude Code), least-used first, benching walled accounts until their reset and judging the run by the file it wrote. No dependencies.",
+  "type": "module",
+  "bin": { "cli-rotator": "./cli-rotator.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/routing/cli-rotator" },
+  "keywords": ["agents", "gemini-cli", "codex", "claude-code", "rate-limit", "quota", "rotation", "cli", "headless"]
+}

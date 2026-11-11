@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="574" viewBox="0 0 880 574" role="img" aria-label="model-router: offline test suite">
+<rect x="0.5" y="0.5" width="879" height="573" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">model-router: offline test suite</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 1 - urgency: the pool nearer its reset ranks first when both are equally behind</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 2 - final window lifts a behind API pool above a free pool; outside it the free pool wins</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 3 - ties within the margin go to the earliest reset, then the cheaper pool</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 4 - private work is refused by pools without "private": true</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 5 - stale or missing readings: exit 3 when nothing else can take the work</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 6 - a reading from a cycle that has since reset counts as 0 used</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 7 - batch: on for a batch-capable pick; off for --now, --human-waiting and a reset under batchMin</text>
+<text x="20" y="226" xml:space="preserve">  Hours</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 8 - a subscription ahead of its line is a last resort; behind it, it burns first</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 9 - blocks: blockedUntil takes a pool out until then; blockedModels falls through to the next mod</text>
+<text x="20" y="286" xml:space="preserve">  el</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 10 - time windows: wrap past midnight, --minutes must fit, no new starts after a cut-off</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 11 - cycleBounds: monthly resets clamp to short months and honour the offset; periodic cycles rol</text>
+<text x="20" y="346" xml:space="preserve">  l from the anchor</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 12 - content scan reports type and line, never the value; allow-listed e-mails and custom pattern</text>
+<text x="20" y="386" xml:space="preserve">  s</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 13 - CLI: a scanned file with a fake key routes as private and never echoes the key</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 14 - CLI: the example config routes bulk to api-main with a ranked chain</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 15 - CLI: stale usage file -&gt; exit 3</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 16 - bad usage -&gt; exit 2 with a JSON error</text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#7d8590"># tests 16</tspan></text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#7d8590"># pass 16</tspan></text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># fail 0</tspan></text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#7d8590"># duration_ms 1778.1858</tspan></text>
+</g>
+</svg>

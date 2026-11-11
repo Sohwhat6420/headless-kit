@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="594" viewBox="0 0 880 594" role="img" aria-label="anthropic-pool: status, a dry run, a stubbed batch run">
+<rect x="0.5" y="0.5" width="879" height="593" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">anthropic-pool: status, a dry run, a stubbed batch run</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># two pools in anthropic-pool.config.json; ANTHROPIC_BASE_URL points at examples/stub-api.mjs (no sp</tspan></text>
+<text x="20" y="86" xml:space="preserve">  ending)</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">anthropic-pool status --human</tspan></text>
+<text x="20" y="126" xml:space="preserve">pool      resets in   spent     budget    available  vs even burn      runs  key</text>
+<text x="20" y="146" xml:space="preserve">team      20 days     USD1.84   USD100.00 USD97.66   USD32.24 under    0/3   present (env TEAM_ANTHR</text>
+<text x="20" y="166" xml:space="preserve">  OPIC_KEY)</text>
+<text x="20" y="186" xml:space="preserve">side      4 days      USD31.20  USD50.00  USD18.80   USD12.71 under    0/2   present (env SIDE_ANTHR</text>
+<text x="20" y="206" xml:space="preserve">  OPIC_KEY)</text>
+<text x="20" y="226" xml:space="preserve">next run spends: side (ready, and its credit expires soonest)</text>
+<text x="20" y="246" xml:space="preserve">uncollected batches: none</text>
+<text x="20" y="266" xml:space="preserve"></text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#7d8590"># --dry-run: every check, no network call</tspan></text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">anthropic-pool api "Name three uses for a ledger." --dry-run</tspan></text>
+<text x="20" y="326" xml:space="preserve">{"ok":true,"dry_run":true,"mode":"api","would":"batch","why":"default: Message Batches API at half p</text>
+<text x="20" y="346" xml:space="preserve">  rice","requests":1,"pool":"side","model":"claude-sonnet-5-5","worst_usd":0.01,"cap_usd":2,"key":"pre</text>
+<text x="20" y="366" xml:space="preserve">  sent","network":false}</text>
+<text x="20" y="386" xml:space="preserve"></text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#7d8590"># the same call for real (against the stub): batch create, poll, results, one ledger row at half pri</tspan></text>
+<text x="20" y="426" xml:space="preserve">  ce</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">anthropic-pool api "Name three uses for a ledger." --poll-sec 1 --note demo</tspan></text>
+<text x="20" y="466" xml:space="preserve">batch msgbatch_stub_1 submitted on pool side (claude-sonnet-5-5), 1 request(s), worst case USD0.01 a</text>
+<text x="20" y="486" xml:space="preserve">  t half price; waiting up to 60 min</text>
+<text x="20" y="506" xml:space="preserve">{"ok":true,"mode":"batch","run_id":"2026-11-11T05-23-42-852Z-96c29e","batch_id":"msgbatch_stub_1","p</text>
+<text x="20" y="526" xml:space="preserve">  ool":"side","model":"claude-sonnet-5-5","requests":1,"succeeded":1,"failed":0,"cost_usd":0.0035,"cos</text>
+<text x="20" y="546" xml:space="preserve">  t_known":true,"price":"batch (half)","input_tokens":1000,"output_tokens":500,"out":null,"text":"stub</text>
+<text x="20" y="566" xml:space="preserve">   reply to: Name three uses for a ledger."}</text>
+</g>
+</svg>

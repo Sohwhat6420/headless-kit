@@ -1,0 +1,12 @@
+{
+  "name": "anthropic-pool",
+  "version": "0.1.0",
+  "description": "Spend Anthropic API credit from several keys, soonest-expiring first: per-run caps, a JSONL ledger, Message Batches at half price by default, headless Claude Code runs with the key only in the child. No dependencies.",
+  "type": "module",
+  "bin": { "anthropic-pool": "./anthropic-pool.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/routing/anthropic-pool" },
+  "keywords": ["anthropic", "claude", "batch", "budget", "router", "cli", "headless", "agents"]
+}

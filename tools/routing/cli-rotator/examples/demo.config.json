@@ -1,0 +1,15 @@
+{
+  "_comment": "Offline demo: three accounts of the fake CLI in test/fixtures. Run examples/demo-setup.mjs first; it makes alpha hit a quota wall.",
+  "command": "node",
+  "args": ["{configDir}/../test/fixtures/fake-cli.mjs", "-p", "{prompt}"],
+  "promptSuffix": "\nOUTPUT-PATH: {expect}\nSENTINEL: {sentinel}\n",
+  "accounts": [
+    { "name": "alpha", "env": { "FAKE_CLI_HOME": "{configDir}/../.demo/homes/alpha" } },
+    { "name": "beta", "env": { "FAKE_CLI_HOME": "{configDir}/../.demo/homes/beta" } },
+    { "name": "gamma", "env": { "FAKE_CLI_HOME": "{configDir}/../.demo/homes/gamma" } }
+  ],
+  "dailyBudget": 50,
+  "memoryGate": { "hotPct": 75, "maxLanesWhenHot": 2, "refusePct": 90 },
+  "timeoutMinutes": 1,
+  "stateDir": "{configDir}/../.demo/state"
+}

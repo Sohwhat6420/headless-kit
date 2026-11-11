@@ -1,0 +1,35 @@
+{
+  "_comment": "cli-rotator example: three accounts of the Gemini CLI, each signed in once (by you, interactively) into its own config home. Keys starting with _ are ignored. Placeholder values only.",
+  "command": "gemini",
+  "args": ["-p", "{prompt}", "--output-format", "json"],
+  "modelArgs": ["-m", "{model}"],
+  "defaultModel": null,
+  "modes": {
+    "write": ["--approval-mode", "auto_edit"],
+    "yolo": ["--yolo"]
+  },
+  "promptVia": "arg",
+  "promptSuffix": "\n\nWrite your result to this absolute path: {expect}\nThe last line of that file must be exactly: {sentinel}\n",
+  "scrubEnv": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+  "accounts": [
+    { "name": "acct-1", "env": { "GEMINI_CLI_HOME": "~/.cli-homes/acct-1" } },
+    { "name": "acct-2", "env": { "GEMINI_CLI_HOME": "~/.cli-homes/acct-2" } },
+    { "name": "key-1", "envFrom": { "GEMINI_API_KEY": "MY_GEMINI_KEY_1" }, "dailyBudget": 50 }
+  ],
+  "dailyBudget": 200,
+  "budgetWindow": "rolling-24h",
+  "walls": ["quota (?:exceeded|reached|exhausted)", "rate.?limit", "\\b429\\b", "resource.?exhausted"],
+  "wallsOnlyOnFailure": false,
+  "reset": {
+    "pattern": "(?:resets?|try again|retry)\\s+(?:in|after)\\s+([0-9][0-9dhms\\s]*)",
+    "defaultMinutes": 60,
+    "dailyAtUtc": null
+  },
+  "wallScope": "account+model",
+  "failurePatterns": ["\"error\"\\s*:\\s*\\{"],
+  "rotateOn": "wall",
+  "memoryGate": { "hotPct": 75, "maxLanesWhenHot": 2, "refusePct": 90 },
+  "timeoutMinutes": 20,
+  "expect": { "minBytes": 200, "sentinel": "LANE-COMPLETE" },
+  "stateDir": "~/.cli-rotator"
+}

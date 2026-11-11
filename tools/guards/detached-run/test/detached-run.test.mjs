@@ -82,7 +82,7 @@ check(readFileSync(join(dir, 't-python.log'), 'utf8').includes('hello'), 't-pyth
 
 for (const [name] of targets) {
   const k = dr('stop', name);
-  check(k.status === 0, `stop ${name}`);
+  check(k.status === 0, `stop ${name}`, k.status === 0 ? '' : `exit ${k.status}: ${(k.stdout || '').trim()} ${(k.stderr || '').trim()}`.slice(0, 400));
   check(dr('status', name).status === 3, `${name} status says dead after stop`);
 }
 

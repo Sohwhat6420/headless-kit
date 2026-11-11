@@ -1,0 +1,12 @@
+{
+  "name": "model-router",
+  "version": "0.1.0",
+  "description": "Pick which model pool (subscription, API credit, free tier, local) should take a task, ranked by use-it-or-lose-it urgency, with a privacy guard and a Batch decision. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "model-router": "./model-router.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/routing/model-router" },
+  "keywords": ["llm", "router", "quota", "budget", "batch", "agents", "cli", "headless"]
+}

@@ -38,11 +38,19 @@ const NAME_RE = /^[A-Za-z0-9._-]{1,64}$/;
 
 const pidFile = (name) => join(RUN_DIR, `${name}.json`);
 const readRec = (name) => { try { return JSON.parse(readFileSync(pidFile(name), 'utf8')); } catch { return null; } };
+// `stop` and the supervisor's exit handler can write the same record at the same moment (the child dies the
+// instant taskkill returns). Each writer uses its own temp file, and a rename that Windows refuses because the
+// other writer holds the target (EPERM / EBUSY / EACCES) is retried for up to about a second.
 function writeRec(rec) {
   mkdirSync(RUN_DIR, { recursive: true });
-  const tmp = pidFile(rec.name) + '.tmp';
+  const tmp = `${pidFile(rec.name)}.${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(rec, null, 2));
-  renameSync(tmp, pidFile(rec.name));
+  for (let i = 0; ; i++) {
+    try { renameSync(tmp, pidFile(rec.name)); return; } catch (e) {
+      if (i >= 20 || !['EPERM', 'EBUSY', 'EACCES'].includes(e.code)) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
 }
 
 function ps(script) {

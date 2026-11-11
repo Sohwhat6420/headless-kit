@@ -1,0 +1,54 @@
+{
+  "$comment": "Placeholder pools. Budgets are in each pool's own unit: percent of a weekly quota for the subscription, USD of monthly credit for the API keys. Model names are placeholders: put your provider's model ids here.",
+  "tasks": ["judgement", "bulk", "read", "vision-ui", "code"],
+  "usageFile": "./usage.example.json",
+  "utcOffset": "+00:00",
+  "staleMinutes": 30,
+  "tieMargin": 0.05,
+  "batchMinHours": 26,
+  "finalWindowDays": 7,
+  "scan": {
+    "allowEmails": ["example.com"],
+    "patterns": [
+      { "name": "customer-id", "regex": "\\bCUST-[0-9]{6}\\b" }
+    ]
+  },
+  "pools": [
+    {
+      "name": "subscription",
+      "kind": "subscription",
+      "models": { "judgement": "large-model", "*": "medium-model" },
+      "budget": 100,
+      "cycle": { "periodDays": 7, "anchor": "2026-11-06T02:00:00Z" },
+      "shortWindowCeiling": 90,
+      "private": true
+    },
+    {
+      "name": "api-main",
+      "kind": "api",
+      "models": { "judgement": "large-model", "*": "medium-model" },
+      "budget": 100,
+      "cycle": { "monthlyResetDay": 24 },
+      "batch": true
+    },
+    {
+      "name": "api-team",
+      "kind": "api",
+      "models": { "judgement": "large-model", "*": "medium-model" },
+      "budget": 50,
+      "cycle": { "monthlyResetDay": 13 },
+      "batch": true
+    },
+    {
+      "name": "free-tier",
+      "kind": "free",
+      "models": { "bulk": ["small-fast-model", "medium-model"], "read": ["small-fast-model", "medium-model"], "code": "medium-model" },
+      "urgency": 0.2
+    },
+    {
+      "name": "local",
+      "kind": "local",
+      "models": { "*": "local-8b" }
+    }
+  ]
+}

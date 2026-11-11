@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1154" viewBox="0 0 880 1154" role="img" aria-label="cli-rotator: a quota wall benches alpha, the run moves on and the file is checked">
+<rect x="0.5" y="0.5" width="879" height="1153" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">cli-rotator: a quota wall benches alpha, the run moves on and the file is checked</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># offline demo: three accounts of a fake agent CLI; alpha answers with a quota wall</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node examples/demo-setup.mjs</tspan></text>
+<text x="20" y="106" xml:space="preserve">{"ok":true,"demo":".demo","accounts":{"alpha":{"mode":"wall","resetIn":"2h0m0s"},"beta":{"mode":"wri</text>
+<text x="20" y="126" xml:space="preserve">  te"},"gamma":{"mode":"write"}}}</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#7d8590"># --status prints a table on stderr and one JSON line on stdout (hidden here)</tspan></text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node cli-rotator.mjs --config examples/demo.config.json --status</tspan></text>
+<text x="20" y="206" xml:space="preserve">[cli-rotator] 3 account(s), budget per rolling-24h, wall scope account</text>
+<text x="20" y="226" xml:space="preserve">  alpha         0/50  available</text>
+<text x="20" y="246" xml:space="preserve">  beta          0/50  available</text>
+<text x="20" y="266" xml:space="preserve">  gamma         0/50  available</text>
+<text x="20" y="286" xml:space="preserve">  memory gate: memory 83.7% used &gt;= 75%: 0 of 2 lane slots in use -&gt; lanes allowed</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#7d8590"># run 1: alpha hits the wall, is benched until the reset it printed, beta writes the file</tspan></text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node cli-rotator.mjs --config examples/demo.config.json "Summarise what the tests cover" --expect </tspan></text>
+<text x="20" y="366" xml:space="preserve">  .demo/report-1.md</text>
+<text x="20" y="386" xml:space="preserve">[cli-rotator] memory gate: memory 83.8% used &gt;= 75%: 0 of 2 lane slots in use</text>
+<text x="20" y="406" xml:space="preserve">[cli-rotator] -&gt; alpha</text>
+<text x="20" y="426" xml:space="preserve">   wall: Error: Individual quota reached for this account. Resets in 2h0m0s.</text>
+<text x="20" y="446" xml:space="preserve">   benched until 2026-11-11 07:29 UTC (from output); rotating</text>
+<text x="20" y="466" xml:space="preserve">[cli-rotator] -&gt; beta</text>
+<text x="20" y="486" xml:space="preserve">   exit 0 in 0.1s</text>
+<text x="20" y="506" xml:space="preserve">   expect: ok (349 bytes, sentinel on the last line)</text>
+<text x="20" y="526" xml:space="preserve">{"ok":true,"account":"beta","cliOutcome":"ok","exitCode":0,"attempts":[{"account":"alpha","outcome":</text>
+<text x="20" y="546" xml:space="preserve">  "wall","exitCode":1,"ms":73,"wallText":"Error: Individual quota reached for this account. Resets in </text>
+<text x="20" y="566" xml:space="preserve">  2h0m0s.","benchedUntil":"2026-11-11T07:29:59.764Z","resetFrom":"output","log":"~/cli-rotator\\.demo\</text>
+<text x="20" y="586" xml:space="preserve">  \state\\runs\\20261111T052959-37792-alpha.log"},{"account":"beta","outcome":"ok","exitCode":0,"ms":6</text>
+<text x="20" y="606" xml:space="preserve">  3,"log":"~/cli-rotator\\.demo\\state\\runs\\20261111T052959-37792-beta.log"}],"expect":{"path":"~/cl</text>
+<text x="20" y="626" xml:space="preserve">  i-rotator\\.demo\\report-1.md","ok":true,"verdict":"ok","bytes":349,"why":"349 bytes, sentinel on th</text>
+<text x="20" y="646" xml:space="preserve">  e last line"}}</text>
+<text x="20" y="666" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="686" xml:space="preserve"><tspan fill="#7d8590"># run 2: alpha is still benched and is skipped without a call; gamma is the least used</tspan></text>
+<text x="20" y="706" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node cli-rotator.mjs --config examples/demo.config.json "List the exit codes" --expect .demo/repor</tspan></text>
+<text x="20" y="726" xml:space="preserve">  t-2.md</text>
+<text x="20" y="746" xml:space="preserve">[cli-rotator] memory gate: memory 83.7% used &gt;= 75%: 0 of 2 lane slots in use</text>
+<text x="20" y="766" xml:space="preserve">[cli-rotator] skip alpha: benched until 2026-11-11 07:29 UTC</text>
+<text x="20" y="786" xml:space="preserve">[cli-rotator] -&gt; gamma</text>
+<text x="20" y="806" xml:space="preserve">   exit 0 in 0.1s</text>
+<text x="20" y="826" xml:space="preserve">   expect: ok (349 bytes, sentinel on the last line)</text>
+<text x="20" y="846" xml:space="preserve">{"ok":true,"account":"gamma","cliOutcome":"ok","exitCode":0,"attempts":[{"account":"gamma","outcome"</text>
+<text x="20" y="866" xml:space="preserve">  :"ok","exitCode":0,"ms":80,"log":"~/cli-rotator\\.demo\\state\\runs\\20261111T052959-35816-gamma.log</text>
+<text x="20" y="886" xml:space="preserve">  "}],"skipped":[{"account":"alpha","state":"benched","benchedUntil":"2026-11-11T07:29:59.764Z"}],"exp</text>
+<text x="20" y="906" xml:space="preserve">  ect":{"path":"~/cli-rotator\\.demo\\report-2.md","ok":true,"verdict":"ok","bytes":349,"why":"349 byt</text>
+<text x="20" y="926" xml:space="preserve">  es, sentinel on the last line"}}</text>
+<text x="20" y="946" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="966" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node cli-rotator.mjs --config examples/demo.config.json --status</tspan></text>
+<text x="20" y="986" xml:space="preserve">[cli-rotator] 3 account(s), budget per rolling-24h, wall scope account</text>
+<text x="20" y="1006" xml:space="preserve">  alpha         1/50  benched      until 2026-11-11 07:29 UTC</text>
+<text x="20" y="1026" xml:space="preserve">             wall: Error: Individual quota reached for this account. Resets in 2h0m0s.</text>
+<text x="20" y="1046" xml:space="preserve">  beta          1/50  available</text>
+<text x="20" y="1066" xml:space="preserve">  gamma         1/50  available</text>
+<text x="20" y="1086" xml:space="preserve">  memory gate: memory 83.8% used &gt;= 75%: 0 of 2 lane slots in use -&gt; lanes allowed</text>
+<text x="20" y="1106" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="1126" xml:space="preserve"><tspan fill="#7d8590"># (the folder path in the JSON is shortened to ~/cli-rotator; nothing else is edited)</tspan></text>
+</g>
+</svg>

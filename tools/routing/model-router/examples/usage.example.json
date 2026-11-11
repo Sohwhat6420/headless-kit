@@ -1,0 +1,7 @@
+{
+  "$comment": "Current usage, one entry per metered pool. Update it from your provider's dashboard or usage API. 'at' is when you read it; a reading older than staleMinutes is not trusted.",
+  "subscription": { "used": 93, "at": "2026-11-19T07:50:00Z", "shortWindowPct": 35, "shortWindowResetsAt": "2026-11-19T10:00:00Z" },
+  "api-main": { "used": 40, "at": "2026-11-19T07:55:00Z" },
+  "api-team": { "used": 2, "at": "2026-11-19T07:55:00Z" },
+  "free-tier": { "blockedModels": [], "blockedUntil": null }
+}
