@@ -16,13 +16,13 @@
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/research/ig2md
 node ig2md.mjs --check && node ig2md.mjs "https://www.instagram.com/reel/<shortcode>/"
-node --test                           # 23 offline tests, about 3 s
+node --test                           # 26 offline tests, about 7 s
 ```
 
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="23 of 23 tests pass: URL parsing, mappers for every source, merge and provenance, schema rejection, redaction, chromiumPath refusals, the request cap, logged-out flags, missing tools, embed page over a local stub, a fake Playwright launched headless, login wall, rate limits (including one after an earlier source answered, and one on a media download), stories, the CLI" width="100%">
+<img src="docs/test-run.svg" alt="26 of 26 tests pass: URL parsing, mappers for every source, merge and provenance, schema rejection, redaction, chromiumPath refusals, the request cap, logged-out flags, missing tools, embed page over a local stub, a fake Playwright launched headless, login wall, rate limits (including one after an earlier source answered, and one on a media download), a 403 whose URL contains 429 not taken for a rate limit, a cut-short record not counted as fresh, every tool's retries off, stories, the CLI" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as files plus a JSON line, standard library only.
@@ -82,7 +82,7 @@ The request gate counts each tool call or page load (not every image a page pull
 | `playwrightModule` | null | Folder of an installed `playwright` package, if `import('playwright')` cannot find it. Env `IG2MD_PLAYWRIGHT`. |
 | `chromiumPath` | null | Only a Playwright-bundled browser inside an `ms-playwright` folder, for a version mismatch. Installed Chrome or Edge paths are refused. |
 | `embedBaseUrl` | `https://www.instagram.com` | Where the embed page is fetched from (the tests point it at a local stub). |
-| `skipIfFresherThanHours` | 0 | Skip a URL whose JSON is newer than this. |
+| `skipIfFresherThanHours` | 0 | Skip a URL whose JSON is newer than this. A record saved by a run that a rate limit cut short carries a `PARTIAL` marker and is never skipped; the marker goes once a run completes it. |
 
 ## Exit codes
 
@@ -106,7 +106,7 @@ With several URLs, the exit code is the first failure's.
 
 ## Status
 
-Tested (offline, 23 `node:test` cases, about 3 s on Windows 11 with Node 22): URL parsing (12 shapes), every mapper against fixtures, merge order and provenance, schema validation and rejection, Markdown, redaction, error classes, chromiumPath refusals, the request cap and delay, the exact flags handed to each tool (via a fake CLI that logs its arguments), missing tools, the embed page over a local HTTP stub (200, 404, 429), a fake Playwright module (headless, fresh context, no channel or profile), the login wall, a rate limit stopping a batch (also when an earlier source had already answered, and when it hits a media download), stories, `--from-file` and the CLI. The demo above is a real run against the same stand-ins.
+Tested (offline, 26 `node:test` cases, about 7 s on Windows 11 with Node 22): URL parsing (12 shapes), every mapper against fixtures, merge order and provenance, schema validation and rejection, Markdown, redaction, error classes (a status code counts only where a tool prints one, so a 403 for a CDN file or shortcode containing "429" is not a rate limit), chromiumPath refusals, the request cap and delay, the exact flags handed to each tool (via a fake CLI that logs its arguments, including every tool's retries off), missing tools, the embed page over a local HTTP stub (200, 404, 429), a fake Playwright module (headless, fresh context, no channel or profile), the login wall, a rate limit stopping a batch (also when an earlier source had already answered, and when it hits a media download), a cut-short record rerun instead of skipped as fresh, stories, `--from-file` and the CLI. The demo above is a real run against the same stand-ins.
 
 Not tested here: live Instagram. An earlier version of this code was run once by hand against one public video post, where yt-dlp and the embed page both worked logged-out; gallery-dl, instaloader and a live carousel have never been run live. The embed page parser relies on Instagram's current markup and will need updating when it changes. Only Node 22 was run; the code uses nothing newer than Node 18 (`fetch`, `AbortSignal.timeout`), but Node 18 itself was not tried.
 

@@ -1,7 +1,8 @@
 // Offline stand-in for yt-dlp, gallery-dl, instaloader and ffmpeg in the tests and the demo. No network.
 //   node fake-tool.mjs --as <yt-dlp|gallery-dl|instaloader|ffmpeg> <the real tool's arguments...>
 // FAKE_MODE=ok|login|429 picks the outcome (FAKE_MODE_YT_DLP, FAKE_MODE_GALLERY_DL, ... for one tool only);
-// FAKE_MEDIA=429 lets the metadata call work and fails the media download; FAKE_YTDLP=carousel swaps the yt-dlp fixture;
+// FAKE_MEDIA=429 lets the metadata call work and fails the media download (FAKE_MEDIA_ERR=<text> fails it with that
+// stderr instead, e.g. a 403 whose URL happens to contain "429"); FAKE_YTDLP=carousel swaps the yt-dlp fixture;
 // FAKE_LOG=<file> appends each call's arguments as one JSON line, so tests can check the flags that were passed.
 import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,7 +12,10 @@ const as = argv[0] === '--as' ? argv[1] : 'yt-dlp';
 const a = argv[0] === '--as' ? argv.slice(2) : argv;
 const fx = (n) => readFileSync(new URL('./' + n, import.meta.url), 'utf8');
 const mode = process.env['FAKE_MODE_' + as.replace(/-/g, '_').toUpperCase()] || process.env.FAKE_MODE || 'ok';
-const media429 = () => { if (process.env.FAKE_MEDIA === '429') { console.error('ERROR: HTTP Error 429: Too Many Requests'); process.exit(1); } };
+const media429 = () => {
+  if (process.env.FAKE_MEDIA_ERR) { console.error(process.env.FAKE_MEDIA_ERR); process.exit(as === 'gallery-dl' ? 4 : 1); }
+  if (process.env.FAKE_MEDIA === '429') { console.error('ERROR: HTTP Error 429: Too Many Requests'); process.exit(1); }
+};
 if (process.env.FAKE_LOG) appendFileSync(process.env.FAKE_LOG, JSON.stringify({ as, args: a }) + '\n');
 
 if (a.includes('--version') || a.includes('-version')) { console.log(`${as} 0.0-fake`); process.exit(0); }

@@ -90,7 +90,7 @@ Each app:
 | `idleMinutes` | Closable only after every other check has passed for this many minutes in a row (across runs; use `--watch` or a scheduler). Any keep resets the clock. |
 | `orphanOnly` | Only processes whose parent is gone (a dev server left behind by a closed terminal). |
 | `unlessParent` | Skip processes whose parent's name matches (the same binary started from a shell is yours, not the desktop app). |
-| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule; a protected descendant (OS-critical, `never`, this process or its ancestors) and everything under it is never stopped, nor a process older than the PID it names as its parent (that parent number was reused). |
+| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule; a protected descendant (OS-critical, `never`, this process or its ancestors) and everything under it is never stopped, nor a process older than the PID it names as its parent (that parent number was reused). That last check needs start times, which Windows and Linux give; macOS's `ps` reading has none, so there the tree follows parent PIDs only. |
 | `respawnHold` | Default `true`. `false` turns the respawn hold off for this app (for one you reopen by hand often). |
 
 ## How it decides

@@ -2,7 +2,7 @@
 // ig2md: a public Instagram post, reel or carousel URL -> <shortcode>.json (schema-versioned) + <shortcode>.md + frames.
 // Logged-out and public only: it runs yt-dlp, gallery-dl, the public embed page and instaloader (each optional; a
 // missing one is skipped), politely and one request at a time, and merges what they return. No login, no cookies.
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { join, resolve, dirname, basename, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { EXIT, parseInput, parseUrlList, mapYtDlp, mapGalleryDl, mapEmbed, mapInstaloader, merge, hasContent, validate, renderMd, redact, run, classifyError } from './lib.mjs';
@@ -109,13 +109,14 @@ const lastLine = (s, code) => redact(String(s || '').trim().split(/\r?\n/).pop()
 // yt-dlp and gallery-dl get --ignore-config so a user config can never add cookies or a login behind our back, and
 // no retries of their own: one refusal is an answer, and a rate limit stops the batch here.
 // A media download that fails after the metadata worked keeps the metadata; a rate limit there still stops the batch.
+const PARTIAL = 'PARTIAL';
 function mediaFailed(name, data, d) {
   const warning = `media download: ${lastLine(d.err, d.code)}`;
   return { name, ok: true, data, warning, rateLimited: classifyError(d.err) === 'rate_limited' };
 }
 
 async function srcYtDlp(t, cfg, gate, dirs, o) {
-  const base = ['--ignore-config', '--no-cookies', '--no-warnings', '--no-playlist', '--retries', '0', '--extractor-retries', '0'];
+  const base = ['--ignore-config', '--no-cookies', '--no-warnings', '--no-playlist', '--retries', '0', '--extractor-retries', '0', '--fragment-retries', '0'];
   await gate.take('yt-dlp metadata');
   const r = await run(cfg.tools.ytdlp, [...base, '--dump-single-json', t.url], { timeoutMs: 120000 });
   if (r.code !== 0) return { name: 'yt-dlp', ok: false, error: lastLine(r.err, r.code), cls: classifyError(r.err) };
@@ -237,7 +238,8 @@ export async function processTarget(t, cfg, opts = {}) {
   if (t.kind === 'story' || t.kind === 'highlight') {
     return { exit: EXIT.NEEDS_LOGIN, error: 'Stories and highlights are not served to logged-out visitors, so ig2md does not support them. To file media you already have, pass --from-file <path>.' };
   }
-  if (cfg.skipIfFresherThanHours > 0 && existsSync(join(base, `${t.shortcode}.json`))) {
+  // A record saved by a run that a rate limit cut short (PARTIAL marker) is never "fresh": the rerun completes it.
+  if (cfg.skipIfFresherThanHours > 0 && existsSync(join(base, `${t.shortcode}.json`)) && !existsSync(join(base, PARTIAL))) {
     const ageH = (Date.now() - statSync(join(base, `${t.shortcode}.json`)).mtimeMs) / 3.6e6;
     if (ageH < cfg.skipIfFresherThanHours) return { exit: EXIT.OK, skipped: true, dir: rel };
   }
@@ -278,7 +280,11 @@ export async function processTarget(t, cfg, opts = {}) {
   await makeFrames(post, cfg, dirs, log);
   const out = finish(post, dirs, t);
   // A rate limit after an earlier source returned content: keep what was fetched, but still stop the batch.
-  if (worst === 'rate_limited' && out.exit === EXIT.OK) return { ...out, exit: EXIT.RATE_LIMITED, error: 'Rate limited by Instagram; saved what the earlier sources returned, then stopped (no retries).' };
+  if (worst === 'rate_limited' && out.exit === EXIT.OK) {
+    writeFileSync(join(base, PARTIAL), 'A rate limit cut this run short; the next run fetches this post again, whatever skipIfFresherThanHours says.\n');
+    return { ...out, exit: EXIT.RATE_LIMITED, error: 'Rate limited by Instagram; saved what the earlier sources returned, then stopped (no retries).' };
+  }
+  if (out.exit === EXIT.OK) rmSync(join(base, PARTIAL), { force: true });
   return out;
 }
 

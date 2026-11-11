@@ -227,10 +227,16 @@ export function run(cmd, args, { timeoutMs = 120000, cwd } = {}) {
 }
 
 // ---------- failure classification ----------
+// A status code counts only where the tools print one ("HTTP Error 429", "'429 Too Many Requests'", "status 429"),
+// never as bare digits: CDN filenames and shortcodes contain "429" and "404" (…/449123456_18429317_n.jpg, C429abc).
+const status = (code) => new RegExp(`\\b(?:HTTP(?: Error)?|status(?: code)?|response(?: code)?)[\\s:]*${code}\\b|['"(]${code}\\b`, 'i');
+const RATE_LIMITED = [status(429), /\b429 Too Many\b/i, /too many (requests|queries)|rate.?limit|wait a few minutes/i];
+const NEEDS_LOGIN = [/login required|log in|empty media response|requires? (a )?(login|cookies|authentication)|use --cookies/i];
+const NOT_FOUND = [status(404), /not found|unavailable|private|removed|deleted/i];
 export function classifyError(text) {
   const t = String(text);
-  if (/429|rate.?limit|too many requests|wait a few minutes/i.test(t)) return 'rate_limited';
-  if (/login required|log in|empty media response|requires? (a )?(login|cookies|authentication)|use --cookies/i.test(t)) return 'needs_login';
-  if (/not found|404|unavailable|private|removed|deleted/i.test(t)) return 'not_found';
+  if (RATE_LIMITED.some((re) => re.test(t))) return 'rate_limited';
+  if (NEEDS_LOGIN.some((re) => re.test(t))) return 'needs_login';
+  if (NOT_FOUND.some((re) => re.test(t))) return 'not_found';
   return 'other';
 }

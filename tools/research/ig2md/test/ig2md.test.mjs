@@ -123,6 +123,13 @@ test('redaction strips cookie values; error classes, including the ambiguous yt-
   assert.equal(classifyError('Requested content is not available, rate-limit reached or login required'), 'rate_limited', 'ambiguous: stop the batch');
   assert.equal(classifyError('Instagram sent an empty media response'), 'needs_login');
   assert.equal(classifyError('Post not found'), 'not_found');
+  // Status codes count only where a tool prints one, never as digits inside a CDN filename or a shortcode.
+  assert.equal(classifyError("[instagram][error] HttpError: '429 Too Many Requests' for 'https://x/'"), 'rate_limited');
+  assert.equal(classifyError('Too many queries in the last time. Need to wait 600 seconds'), 'rate_limited');
+  assert.equal(classifyError("[instagram][error] HttpError: '403 Forbidden' for 'https://scontent.cdninstagram.com/v/t51/449123456_18429317_n.jpg'"), 'other');
+  assert.equal(classifyError('ERROR: [Instagram] C429abc: unable to download video data: HTTP Error 403: Forbidden'), 'other');
+  assert.equal(classifyError('ERROR: https://x/1404_404123_n.mp4: HTTP Error 403: Forbidden'), 'other');
+  assert.equal(classifyError('HTTP Error 404: Not Found'), 'not_found');
 });
 
 test('chromiumPath: installed Chrome or Edge and non-Playwright paths refused; a bundled path accepted', () => {
@@ -327,4 +334,50 @@ test('a 429 on a media download stops the batch too; the metadata is kept and th
   assert.match(r.json.results[0].sources[0].error, /media download: .*429/);
   const post = JSON.parse(readFileSync(join(dir, 'out', 'M1', 'M1.json'), 'utf8'));
   assert.ok(post.caption); assert.equal(post.media[0].file ?? null, null, 'no file was saved');
+});
+
+test('a 403 whose URL or shortcode contains "429" is not a rate limit: the batch goes on (exit 0, 2 results)', () => {
+  const dir = tmp(); const cfgFile = join(dir, 'cfg.json');
+  writeFileSync(cfgFile, JSON.stringify({ outDir: join(dir, 'out'), minDelayMs: 0, maxDelayMs: 0, screenshot: false, sources: ['yt-dlp', 'gallery-dl'],
+    playwrightModule: join(dir, 'none'), tools: { ytdlp: tool('yt-dlp'), gallerydl: tool('gallery-dl'), ffmpeg: tool('ffmpeg'), instaloader: MISSING } }));
+  for (const err of ["[instagram][error] HttpError: '403 Forbidden' for 'https://scontent.cdninstagram.com/v/t51/449123456_18429317_n.jpg'",
+    'ERROR: [Instagram] C429abc: unable to download video data: HTTP Error 403: Forbidden']) {
+    const r = cli(['--config', cfgFile, 'https://www.instagram.com/reel/C429abc/', 'https://www.instagram.com/reel/N2/'], { env: { FAKE_MEDIA_ERR: err } });
+    assert.equal(r.code, 0, r.err); assert.equal(r.json.results.length, 2, 'the second URL was tried');
+    assert.match(r.json.results[0].sources[0].error, /media download: .*403/);
+  }
+});
+
+test('a record a rate limit cut short is not "fresh": the rerun fetches it again and completes it', () => {
+  const dir = tmp(); const cfgFile = join(dir, 'cfg.json');
+  writeFileSync(cfgFile, JSON.stringify({ outDir: join(dir, 'out'), minDelayMs: 0, maxDelayMs: 0, screenshot: false, skipIfFresherThanHours: 24, sources: ['yt-dlp'],
+    playwrightModule: join(dir, 'none'), tools: { ytdlp: tool('yt-dlp'), gallerydl: MISSING, ffmpeg: tool('ffmpeg'), instaloader: MISSING } }));
+  const url = 'https://www.instagram.com/reel/P1/';
+  const cut = cli(['--config', cfgFile, url], { env: { FAKE_MEDIA: '429' } });
+  assert.equal(cut.code, 4, cut.err); assert.ok(existsSync(join(dir, 'out', 'P1', 'PARTIAL')));
+  const again = cli(['--config', cfgFile, url]);
+  assert.equal(again.code, 0, again.err); assert.ok(!again.json.results[0].skipped, 'not skipped as fresh');
+  assert.equal(JSON.parse(readFileSync(join(dir, 'out', 'P1', 'P1.json'), 'utf8')).media[0].file, 'media/00001.mp4');
+  assert.ok(!existsSync(join(dir, 'out', 'P1', 'PARTIAL')), 'the marker goes once the record is complete');
+  const third = cli(['--config', cfgFile, url]);
+  assert.equal(third.code, 0); assert.ok(third.json.results[0].skipped, 'a complete record is fresh again');
+});
+
+test('every tool runs with its own retries off (yt-dlp, gallery-dl, instaloader)', async () => {
+  const dir = tmp(); const log = join(dir, 'calls.jsonl');
+  // A failing media download keeps yt-dlp from being "complete", so gallery-dl runs both its calls too; instaloader
+  // runs only when no caption is known yet, so it gets a run of its own.
+  const both = cfgFor(dir, { sources: ['yt-dlp', 'gallery-dl'] });
+  const insta = cfgFor(dir, { sources: ['instaloader'] });
+  await withEnv({ FAKE_MODE: null, FAKE_LOG: log, FAKE_MEDIA_ERR: 'ERROR: HTTP Error 403: Forbidden' }, async () => {
+    await processTarget(tgt('https://www.instagram.com/p/RT1/'), both, { gate: quietGate(both) });
+    await processTarget(tgt('https://www.instagram.com/p/RT2/'), insta, { gate: quietGate(insta) });
+  });
+  const calls = readLog(log).filter((c) => !c.args.includes('--version'));
+  const pair = (args, flag, v) => args.some((x, i) => x === flag && args[i + 1] === v);
+  const by = (as) => calls.filter((c) => c.as === as);
+  assert.ok(by('yt-dlp').length >= 2 && by('gallery-dl').length >= 2 && by('instaloader').length === 1, JSON.stringify(calls.map((c) => c.as)));
+  for (const c of by('yt-dlp')) for (const f of ['--retries', '--extractor-retries', '--fragment-retries']) assert.ok(pair(c.args, f, '0'), `yt-dlp ${f} 0`);
+  for (const c of by('gallery-dl')) assert.ok(pair(c.args, '--retries', '0'), 'gallery-dl --retries 0');
+  for (const c of by('instaloader')) assert.ok(pair(c.args, '--max-connection-attempts', '1'), 'instaloader --max-connection-attempts 1');
 });
