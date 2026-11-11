@@ -4,9 +4,10 @@
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)
 ![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-Cheap, plug-and-play tools for people who build with AI agents: route work to the model pool that is about to lose
-unspent allowance, rotate agent CLIs across accounts, spend API credit by Batch, and run background jobs without a
-window. Each tool is one Node file with no dependencies, prints a machine-readable result, and is tested.
+Every tool my AI agents use, in one repo, as cheap and plug-and-play as I can make it: route work to the model pool
+that is about to lose unspent allowance, rotate agent CLIs across accounts, spend API credit by Batch, keep Claude
+Code honest with hooks, guard the machine before heavy work, and pull research without a browser. Each item is one
+Node file with no dependencies, prints a machine-readable result, and is tested.
 
 By Ethan Soh ([Sohwhat6420](https://github.com/Sohwhat6420)).
 
@@ -59,6 +60,10 @@ All real runs. **model-router**: five example pools ranked for a bulk task; priv
 
 <img src="hooks/plan-depth/docs/demo.svg" alt="Terminal: plan-depth injects the plan standard on a plan-mode prompt, then lists the gaps in a thin plan at ExitPlanMode without approving it" width="100%">
 
+**memory-gate**: is there headroom for heavy work? One verdict, one exit code:
+
+<img src="tools/guards/memory-gate/docs/demo.svg" alt="Terminal: memory-gate reads this machine's commit charge, 78.8 percent, and says no-parallelism with exit 3; injected readings show ok with exit 0, stop with exit 4 and unknown with exit 5" width="100%">
+
 **reddit-pull**: every r/rust post and comment since 1 Nov 2026, filtered locally:
 
 <img src="tools/research/reddit-pull/docs/demo.svg" alt="Terminal: reddit-pull scans about 3,100 r/rust posts and comments in 176 seconds and keeps 55 posts and 69 comments that match" width="100%">
@@ -73,7 +78,23 @@ All real runs. **model-router**: five example pools ranked for a bulk task; priv
 npm test
 ```
 
-This runs every tool's test suite from the repo root. Tools that support only Windows are skipped on other systems. GitHub Actions runs the same command on `windows-latest` and `ubuntu-latest`.
+This runs every tool's and hook's test suite from the repo root (`node scripts/run-tests.mjs tools/guards/` runs one
+category). Tools that support only Windows are skipped on other systems. GitHub Actions runs the same command on
+`windows-latest` and `ubuntu-latest`.
+
+## Layout
+
+```text
+tools/routing/    model routing + dispatch
+tools/guards/     machine guards
+tools/research/   research and capture
+hooks/            Claude Code hooks (hooks/hooks.json wires them into the plugin)
+.claude-plugin/   plugin.json + marketplace.json
+```
+
+Each item's folder has its own README, tests, examples and demo, and works on its own: copy one file if that is all
+you need. Agents working in the repo: see [AGENTS.md](AGENTS.md). To add a tool: see
+[CONTRIBUTING.md](CONTRIBUTING.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Security
 
@@ -83,6 +104,11 @@ Only `anthropic-pool` uses API keys. It reads each key from an environment varia
 in the request header or a child process's environment, never prints, logs or stores it, and its tests scan every
 output for the key. Do not put credentials in tool arguments or output files. `model-router` scans the files you
 name for keys and personal data and reports the type and line, never the value.
+
+The hooks fail open (an error means no output, never a block), and none of them approves anything on your behalf:
+`plan-depth` never outputs `permissionDecision: "allow"`, and `dismissal-watch` only blocks if you opt in.
+`instruction-keeper` redacts token shapes before it stores anything. Guards that act (`app-closer`, `bin-dump`)
+report by default and move rather than delete.
 
 ## Roadmap
 
