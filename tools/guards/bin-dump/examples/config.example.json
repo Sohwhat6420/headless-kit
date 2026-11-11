@@ -1,0 +1,6 @@
+{
+  "$comment": "All keys optional. 'bin' is the rubbish bin folder (~ is your home folder). 'protect' lists paths that may never be binned, nor any folder that contains them; the home folder is always protected. 'gitDepth' is how many levels down to look for a .git entry.",
+  "bin": "~/RubbishBin",
+  "protect": ["~/.ssh", "~/.config", "~/projects/important-repo"],
+  "gitDepth": 2
+}

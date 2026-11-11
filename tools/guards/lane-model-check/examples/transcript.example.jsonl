@@ -1,0 +1,7 @@
+{"type":"summary","summary":"example lane"}
+{"type":"user","message":{"role":"user","content":"Summarise the build log."}}
+{"type":"assistant","message":{"role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"(placeholder turn)"}]}}
+{"type":"assistant","message":{"role":"assistant","model":"model-small-20261001","content":[{"type":"text","text":"Reading the log."}]}}
+{"type":"user","message":{"role":"user","content":"Go on."}}
+{"type":"assistant","message":{"role":"assistant","model":"model-small-20261001","content":[{"type":"text","text":"Done."}]}}
+{"type":"assistant","message":{"role":"assistant","model":"model-large-20261001","content":[{"type":"text","text":"(a fallback turn on another model)"}]}}

@@ -1,0 +1,6 @@
+{
+  "$comment": "Thresholds are percentages of the commit limit. From 'hot' upwards: no parallel heavy work. From 'stop' upwards: no heavy work at all. 'basis' matters on Linux only: auto, commit or available.",
+  "hot": 75,
+  "stop": 85,
+  "basis": "auto"
+}

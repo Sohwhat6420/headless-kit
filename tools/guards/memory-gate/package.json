@@ -1,0 +1,13 @@
+{
+  "name": "memory-gate",
+  "version": "0.1.0",
+  "description": "A pre-flight memory check for agents: commit charge as used/limit and a percentage, and a verdict (ok, no-parallelism, stop) with its own exit code. Windows, Linux, best-effort macOS. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "memory-gate": "./memory-gate.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/guards/memory-gate" },
+  "keywords": ["memory", "commit-charge", "preflight", "guard", "agents", "cli", "headless"]
+}

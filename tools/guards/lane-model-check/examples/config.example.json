@@ -1,0 +1,9 @@
+{
+  "$comment": "Every key is optional; these are the defaults, which read Claude Code transcripts. For another agent's JSONL, change turn (the field and value that mark a model turn), modelField (a dotted path to the model id) and transcriptDirs (where --session looks; a trailing /* means any direct subfolder).",
+  "transcriptDirs": ["~/.claude/projects/*"],
+  "transcriptExt": ".jsonl",
+  "turn": { "field": "type", "equals": "assistant" },
+  "modelField": "message.model",
+  "ignoreModels": ["<synthetic>"],
+  "plan": { "lanesPath": "lanes", "idField": "id", "modelField": "model" }
+}

@@ -1,0 +1,7 @@
+{
+  "$comment": "A plan of background lanes and the model each should run. Any JSON works: the config's plan.lanesPath, plan.idField and plan.modelField say where to look.",
+  "lanes": [
+    { "id": "docs-sweep", "model": "model-small", "task": "summarise logs" },
+    { "id": "Design-Review", "model": "model-large", "task": "judgement" }
+  ]
+}

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="554" viewBox="0 0 880 554" role="img" aria-label="memory-gate: is there headroom for heavy work?">
+<rect x="0.5" y="0.5" width="879" height="553" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">memory-gate: is there headroom for heavy work?</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># this machine, right now (Windows: Win32_OperatingSystem through a hidden PowerShell)</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node memory-gate.mjs --explain</tspan></text>
+<text x="20" y="106" xml:space="preserve">{"verdict":"no-parallelism","pct":78.8,"usedBytes":53876293632,"limitBytes":68409155584,"usedGB":50.</text>
+<text x="20" y="126" xml:space="preserve">  18,"limitGB":63.71,"thresholds":{"hot":75,"stop":85},"source":"win32-cim","basis":"commit","platform</text>
+<text x="20" y="146" xml:space="preserve">  ":"win32","advice":"one heavy job at a time: add no parallel work, no big builds alongside"}</text>
+<text x="20" y="166" xml:space="preserve">memory-gate: NO-PARALLELISM: 50.18 of 63.71 GB, 78.8% (commit basis; hot 75, stop 85). one heavy job</text>
+<text x="20" y="186" xml:space="preserve">   at a time: add no parallel work, no big builds alongside</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#7d8590"># exit 3  (3 = no-parallelism)</tspan></text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#7d8590"># injected readings, one per verdict (each verdict has its own exit code)</tspan></text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node memory-gate.mjs --reading '{"usedBytes":17179869184,"limitBytes":34359738368}' --explain</tspan></text>
+<text x="20" y="266" xml:space="preserve">memory-gate: OK: 16 of 32 GB, 50% (commit basis; hot 75, stop 85). headroom: heavy work may start</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#7d8590"># exit 0  ok</tspan></text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node memory-gate.mjs --reading '{"usedBytes":30064771072,"limitBytes":34359738368}' --explain</tspan></text>
+<text x="20" y="326" xml:space="preserve">memory-gate: STOP: 28 of 32 GB, 87.5% (commit basis; hot 75, stop 85). start nothing heavy: free mem</text>
+<text x="20" y="346" xml:space="preserve">  ory first (close idle apps and finished jobs)</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#7d8590"># exit 4  stop</tspan></text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node memory-gate.mjs --reading '{"pct":80}' --hot 60 --stop 90</tspan></text>
+<text x="20" y="406" xml:space="preserve">{"verdict":"no-parallelism","pct":80,"usedBytes":null,"limitBytes":null,"usedGB":null,"limitGB":null</text>
+<text x="20" y="426" xml:space="preserve">  ,"thresholds":{"hot":60,"stop":90},"source":"injec…</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#7d8590"># exit 3</tspan></text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node memory-gate.mjs --reading '{"unsupported":true}' --explain</tspan></text>
+<text x="20" y="486" xml:space="preserve">memory-gate: UNKNOWN: ?% (no basis; hot 75, stop 85). no reading: treat as no-parallelism (one job a</text>
+<text x="20" y="506" xml:space="preserve">  t a time) unless you can check another way [injected: unsupported]</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#7d8590"># exit 5  (5 = unknown: never a guess)</tspan></text>
+</g>
+</svg>

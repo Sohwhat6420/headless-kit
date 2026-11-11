@@ -1,0 +1,13 @@
+{
+  "name": "app-closer",
+  "version": "0.1.0",
+  "description": "Close a configured list of idle apps when memory commit charge is high, and nothing else: rule-matched processes only, with foreground, busy, child, idle-time and respawn checks. Report by default. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "app-closer": "./app-closer.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/guards/app-closer" },
+  "keywords": ["memory", "commit-charge", "process", "close-apps", "guard", "agents", "cli", "headless"]
+}

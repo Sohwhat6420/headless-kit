@@ -1,0 +1,21 @@
+{
+  "$comment": "A recorded process list for demos and tests (--snapshot): with it, app-closer reads no real processes and only simulates kills. commitPct (or commit: {usedBytes, limitBytes}) is the memory reading; fgPid is the process whose window is in front.",
+  "commitPct": 88,
+  "fgPid": 10,
+  "procs": [
+    { "pid": 4, "ppid": 0, "name": "System", "path": "", "commandLine": "", "mb": 0 },
+    { "pid": 50, "ppid": 1, "name": "explorer.exe", "path": "C:/Windows/explorer.exe", "commandLine": "explorer.exe", "mb": 120 },
+    { "pid": 10, "ppid": 50, "name": "terminal.exe", "path": "C:/Apps/Terminal/terminal.exe", "commandLine": "terminal.exe", "mb": 90 },
+    { "pid": 11, "ppid": 10, "name": "pwsh.exe", "path": "C:/Apps/PowerShell/pwsh.exe", "commandLine": "pwsh", "mb": 60 },
+    { "pid": 200, "ppid": 50, "name": "chat-client.exe", "path": "C:/Apps/Chat/chat-client.exe", "commandLine": "chat-client.exe --tray", "mb": 410 },
+    { "pid": 300, "ppid": 50, "name": "GameLauncher.exe", "path": "C:/Games/GameLauncher.exe", "commandLine": "GameLauncher.exe", "mb": 260 },
+    { "pid": 301, "ppid": 300, "name": "GameLauncherHelper.exe", "path": "C:/Games/GameLauncherHelper.exe", "commandLine": "GameLauncherHelper.exe", "mb": 140 },
+    { "pid": 302, "ppid": 300, "name": "SomeGame.exe", "path": "C:/Games/Library/SomeGame/SomeGame.exe", "commandLine": "SomeGame.exe", "mb": 5200 },
+    { "pid": 400, "ppid": 50, "name": "Container Desktop.exe", "path": "C:/Apps/Containers/Container Desktop.exe", "commandLine": "\"Container Desktop.exe\"", "mb": 700 },
+    { "pid": 500, "ppid": 9999, "name": "python.exe", "path": "C:/Apps/Python/python.exe", "commandLine": "python dev-server.py --port 8000", "mb": 95 },
+    { "pid": 600, "ppid": 11, "name": "notes-app.exe", "path": "C:/Apps/Notes/notes-app.exe", "commandLine": "notes-app.exe --dev", "mb": 180 },
+    { "pid": 601, "ppid": 50, "name": "notes-app.exe", "path": "C:/Apps/Notes/notes-app.exe", "commandLine": "notes-app.exe", "mb": 320 },
+    { "pid": 700, "ppid": 50, "name": "media-player.exe", "path": "C:/Apps/Media/media-player.exe", "commandLine": "media-player.exe", "mb": 230 },
+    { "pid": 701, "ppid": 700, "name": "media-decoder.exe", "path": "C:/Apps/Media/media-decoder.exe", "commandLine": "media-decoder.exe", "mb": 150 }
+  ]
+}

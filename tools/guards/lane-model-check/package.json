@@ -1,0 +1,13 @@
+{
+  "name": "lane-model-check",
+  "version": "0.1.0",
+  "description": "Check that a background agent run uses the model it was asked for, by reading the model each turn records in its JSONL transcript. Claude Code format by default; other formats by config. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "lane-model-check": "./lane-model-check.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/guards/lane-model-check" },
+  "keywords": ["agents", "model", "transcript", "jsonl", "guard", "claude-code", "cli", "headless"]
+}

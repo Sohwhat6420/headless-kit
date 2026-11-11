@@ -1,0 +1,43 @@
+{
+  "$comment": "Placeholder apps: replace the names and patterns with the apps YOU are happy to have closed. Regexes are case-insensitive. A process is only stopped if it matches an app's 'match' and is not protected (OS-critical names, 'never', this process and its ancestors).",
+  "closeAtPct": 80,
+  "verifyDelayMs": 5000,
+  "watchIntervalSec": 60,
+  "foregroundUnknown": "keep",
+  "respawn": { "windowMin": 10, "holdMin": 120, "repeatCloses": 3, "repeatWindowMin": 60 },
+  "refusedRetryMin": 30,
+  "never": ["^my-backup-agent(\\.exe)?$"],
+  "apps": [
+    {
+      "app": "Chat client",
+      "match": { "name": ["^chat-client(\\.exe)?$"] },
+      "idleMinutes": 5
+    },
+    {
+      "app": "Game launcher",
+      "match": { "name": ["^GameLauncher(\\.exe)?$", "^GameLauncherHelper(\\.exe)?$"] },
+      "unlessChildRunning": { "except": ["^GameLauncherHelper", "^crashpad"], "reason": "a game it started is open" },
+      "unlessRunning": [{ "path": ["[\\\\/]Games[\\\\/]Library[\\\\/]"], "reason": "a game from its library is running" }]
+    },
+    {
+      "app": "Container desktop",
+      "match": { "name": ["^Container Desktop(\\.exe)?$"] },
+      "busyCheck": { "argv": ["container-cli", "ps", "-q"], "busyWhen": "output", "reason": "containers are running" }
+    },
+    {
+      "app": "Orphaned dev server",
+      "match": { "name": ["^python(3)?(\\.exe)?$"], "commandLine": ["dev-server\\.py"] },
+      "orphanOnly": true
+    },
+    {
+      "app": "Notes app (desktop)",
+      "match": { "name": ["^notes-app(\\.exe)?$"], "notPath": ["node_modules"] },
+      "unlessParent": ["^(bash|zsh|fish|pwsh|powershell|cmd|node)(\\.exe)?$"]
+    },
+    {
+      "app": "Media player",
+      "match": { "name": ["^media-player(\\.exe)?$"] },
+      "killTree": true
+    }
+  ]
+}

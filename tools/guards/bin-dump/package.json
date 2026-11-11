@@ -1,0 +1,13 @@
+{
+  "name": "bin-dump",
+  "version": "0.1.0",
+  "description": "A rubbish bin for agents: move paths into a dated bin folder with a manifest (who, why, where from) instead of deleting them, with refusals for home, roots and live git repositories. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "bin-dump": "./bin-dump.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/guards/bin-dump" },
+  "keywords": ["trash", "rubbish-bin", "recycle", "safe-delete", "guard", "agents", "cli", "headless"]
+}

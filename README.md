@@ -37,6 +37,10 @@ The Claude Code hooks and skills install as a plugin, in Claude Code:
 | Claude Code hooks | [session-card-push](hooks/session-card-push) | When a tool leaves something only one client shows (a proposal card, a refused start), tells the model to notify you and ask in chat. | Claude Code, Node 18+ |
 | Claude Code hooks | [instruction-keeper](hooks/instruction-keeper) | A mod that keeps a verbatim, redacted ledger of what you asked for and checks the work has not dropped any of it. Its own plugin. | Claude Code mods |
 | Machine guards | [detached-run](tools/guards/detached-run) | Starts a Windows process that outlives its launcher and never opens a window. | Node 18+, Windows |
+| Machine guards | [memory-gate](tools/guards/memory-gate) | A pre-flight check before heavy work: commit charge as used / limit, a verdict (ok, no-parallelism, stop) and an exit code per verdict. Never guesses. | Node 18+, Windows / Linux; macOS approximate |
+| Machine guards | [app-closer](tools/guards/app-closer) | Closes idle apps from a JSON rule list when memory is tight: report by default, keeps anything in front, busy or protected, stops only what matches. | Node 18+, Windows / Linux / macOS |
+| Machine guards | [bin-dump](tools/guards/bin-dump) | Moves files into a dated rubbish bin with a manifest (why, who) instead of deleting them; `--restore` puts them back. | Node 18+, any OS |
+| Machine guards | [lane-model-check](tools/guards/lane-model-check) | Checks that a background agent run used the model it was asked for, from its JSONL transcript (Claude Code's format by default). | Node 18+, any OS |
 | Phone + research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
 
 ## See them run
