@@ -1,29 +1,54 @@
 # headless-kit
 
+**Cheap, agent-first tools that run without a browser, a sign-in or a window.**
+
 [![test](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml/badge.svg)](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml)
-![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)
-![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+![Dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-Every tool my AI agents use, in one repo, as cheap and plug-and-play as I can make it: route work to the model pool
-that is about to lose unspent allowance, rotate agent CLIs across accounts, spend API credit by Batch, keep Claude
-Code honest with hooks, guard the machine before heavy work, and pull research without a browser. Each item is one
-Node file with no dependencies, prints a machine-readable result, and is tested.
+<img src="tools/research/reddit-pull/docs/demo.svg" alt="Terminal: reddit-pull scans about 3,100 r/rust posts and comments in 176 seconds and keeps 55 posts and 69 comments that match" width="100%">
 
-By Ethan Soh ([Sohwhat6420](https://github.com/Sohwhat6420)).
+The tools my AI agents use every day, kept as light as I can make them. They route work to whichever model pool is
+about to lose unspent allowance, keep Claude Code honest with hooks, guard the machine before heavy work, and pull
+research without a browser. [reddit-pull](tools/research/reddit-pull) and [detached-run](tools/guards/detached-run)
+live here too.
+
+- **No dependencies.** Most tools are a single Node file: copy the one you need and leave the rest.
+- **Made for agents to call.** Each tool prints a machine-readable result and exits with a code that means one
+  thing, so an agent can act on it without parsing prose. Nothing opens a browser, a sign-in page or a window.
+- **Tested on Windows and Linux.** `npm test` runs every tool's offline tests, and CI runs them on both.
+
+## Quick start
 
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit
 npm test                                   # every tool's offline tests
-node tools/routing/model-router/model-router.mjs --help
+node tools/guards/memory-gate/memory-gate.mjs
 ```
 
-The Claude Code hooks and skills install as a plugin, in Claude Code:
+The hooks and skills install as a Claude Code plugin:
 
 ```text
 /plugin marketplace add Sohwhat6420/headless-kit
 /plugin install headless-kit@headless-kit
 /plugin install instruction-keeper@headless-kit
 ```
+
+## How it works
+
+An agent runs a tool and reads the result back. This is `memory-gate` on my laptop (11 Nov 2026), while it was busy:
+
+```console
+$ node tools/guards/memory-gate/memory-gate.mjs
+{"verdict":"stop","pct":85.2,"usedBytes":58279473152,"limitBytes":68409155584,"usedGB":54.28,"limitGB":63.71,"thresholds":{"hot":75,"stop":85},"source":"win32-cim","basis":"commit","platform":"win32","advice":"start nothing heavy: free memory first (close idle apps and finished jobs)"}
+$ echo $?
+4
+```
+
+The exit code alone is enough to branch on: 0 is ok, 3 is no parallelism, 4 is stop, 5 is unknown. The other tools
+follow the same pattern: arguments in, a machine-readable result and a meaningful exit code out, longer results
+written to files. Anything a tool fetches from outside is data for the agent to read, never instructions
+(see [Security](#security)).
 
 ## Tools
 
@@ -42,9 +67,9 @@ The Claude Code hooks and skills install as a plugin, in Claude Code:
 | Machine guards | [app-closer](tools/guards/app-closer) | Closes idle apps from a JSON rule list when memory is tight: report by default, keeps anything in front, busy or protected, stops only what matches. | Node 18+, Windows / Linux / macOS |
 | Machine guards | [bin-dump](tools/guards/bin-dump) | Moves files into a dated rubbish bin with a manifest (why, who) instead of deleting them; `--restore` puts them back. | Node 18+, any OS |
 | Machine guards | [lane-model-check](tools/guards/lane-model-check) | Checks that a background agent run used the model it was asked for, from its JSONL transcript (Claude Code's format by default). | Node 18+, any OS |
-| Phone + research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
-| Phone + research | [ig2md](tools/research/ig2md) | Turns a public Instagram post, reel or carousel into schema-versioned JSON + Markdown (and frames) by running yt-dlp, gallery-dl and the public embed page. Logged-out only, rate-limited. | Node 18+, any OS; optional yt-dlp / gallery-dl / ffmpeg |
-| Phone + research | [token-totals](tools/research/token-totals) | Totals the tokens in Claude Code session logs, deduplicated, per day and per model; optional ledger that never lowers a recorded day. Read-only on every log. | Node 18+, any OS |
+| Research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
+| Research | [ig2md](tools/research/ig2md) | Turns a public Instagram post, reel or carousel into schema-versioned JSON + Markdown (and frames) by running yt-dlp, gallery-dl and the public embed page. Logged-out only, rate-limited. | Node 18+, any OS; optional yt-dlp / gallery-dl / ffmpeg |
+| Research | [token-totals](tools/research/token-totals) | Totals the tokens in Claude Code session logs, deduplicated, per day and per model; optional ledger that never lowers a recorded day. Read-only on every log. | Node 18+, any OS |
 
 ## See them run
 
@@ -63,10 +88,6 @@ All real runs. **model-router**: five example pools ranked for a bulk task; priv
 **memory-gate**: is there headroom for heavy work? One verdict, one exit code:
 
 <img src="tools/guards/memory-gate/docs/demo.svg" alt="Terminal: memory-gate reads this machine's commit charge, 78.8 percent, and says no-parallelism with exit 3; injected readings show ok with exit 0, stop with exit 4 and unknown with exit 5" width="100%">
-
-**reddit-pull**: every r/rust post and comment since 1 Nov 2026, filtered locally:
-
-<img src="tools/research/reddit-pull/docs/demo.svg" alt="Terminal: reddit-pull scans about 3,100 r/rust posts and comments in 176 seconds and keeps 55 posts and 69 comments that match" width="100%">
 
 **detached-run**: a job that outlives its launcher, started through WMI, with no window at any point:
 
@@ -119,4 +140,4 @@ Coming tools:
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). By Ethan Soh ([Sohwhat6420](https://github.com/Sohwhat6420)).
