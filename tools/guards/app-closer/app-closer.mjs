@@ -14,7 +14,7 @@
  * command says so, it has not been idle long enough). A process is only ever stopped if it matches an app rule
  * and is not protected: OS-critical names, the config's "never" list, this process and its ancestors.
  *
- * Remembered across runs (state file): when each app was closed, so an app the OS restarts at once is held
+ * Remembered across runs (state file, written by real --close runs only): when each app was closed, so an app the OS restarts at once is held
  * instead of being killed in a loop; how long each app has been idle; kills the OS refused.
  *
  * stdout: one JSON object per check. stderr: a human table with --explain, and error text.
@@ -262,7 +262,7 @@ const MIN = 60000;
  * `st` is the state from the last run; a new state object is returned.
  */
 export function assess(s, cfg, st0 = {}, now = Date.now(), deps = {}) {
-  const busy = deps.busy || runBusyCheck;
+  const busy = deps.busy || runBusyCheck; // called as busy(busyCheck, appName)
   const st = structuredClone({ idleSince: {}, closedAt: {}, closeLog: {}, heldSince: {}, refusedAt: {}, ...st0 });
   const prot = protectedPids(s, cfg, deps.selfPid ?? process.pid);
   const rows = [];
@@ -290,7 +290,7 @@ export function assess(s, cfg, st0 = {}, now = Date.now(), deps = {}) {
     else if (a.skipIfForeground && !s.fgKnown && cfg.foregroundUnknown === 'keep') keep('the window in front is unknown on this platform (set foregroundUnknown or skipIfForeground to change this)');
     else if (a.unlessRunning.find((u) => s.procs.some((p) => procMatches(p, u)))) keep(a.unlessRunning.find((u) => s.procs.some((p) => procMatches(p, u))).reason);
     else if (a.unlessChildRunning && children().length) keep(`${a.unlessChildRunning.reason} (${children().slice(0, 3).map((p) => p.name).join(', ')})`);
-    else if (a.busyCheck && (b = busy(a.busyCheck)) && (b.failed || b.busy)) keep(b.failed ? `${b.why}; kept to be safe` : a.busyCheck.reason);
+    else if (a.busyCheck && (b = busy(a.busyCheck, a.app)) && (b.failed || b.busy)) keep(b.failed ? `${b.why}; kept to be safe` : a.busyCheck.reason);
     else if (a.idleMinutes) {
       st.idleSince[a.app] ??= now;
       const mins = (now - st.idleSince[a.app]) / MIN;
@@ -307,21 +307,58 @@ export function assess(s, cfg, st0 = {}, now = Date.now(), deps = {}) {
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 const sleep = (ms) => { if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
 
-/** Stop these PIDs for real. Returns the PIDs a stop was sent to. */
-export function realKill(pids, { tree = false, s = null, platform = process.platform } = {}) {
+export const sameProc = (a, b) => !!a && !!b && a.name === b.name && a.path === b.path && a.commandLine === b.commandLine;
+
+/** This PID's identity read at this instant (POSIX), or null if it is gone or unreadable. */
+function identityNow(pid, platform = process.platform) {
+  try {
+    if (platform === 'linux') {
+      let path = '';
+      try { path = readlinkSync(`/proc/${pid}/exe`); } catch { /* another user's process */ }
+      const name = path ? basename(path) : readFileSync(`/proc/${pid}/comm`, 'utf8').trim();
+      const commandLine = readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0').filter(Boolean).join(' ');
+      return { name, path, commandLine };
+    }
+    if (platform === 'darwin') {
+      const ps = (f) => (spawnSync('ps', ['-p', String(pid), '-o', `${f}=`], { encoding: 'utf8', windowsHide: true, timeout: 10000 }).stdout || '').trim();
+      const path = ps('comm');
+      return path ? { name: basename(path), path, commandLine: ps('args') } : null;
+    }
+  } catch { /* gone */ }
+  return null;
+}
+
+/** Add each target's descendants (from snapshot s), leaving out protected PIDs. */
+export function treeOf(pids, s, prot = new Set()) {
+  const all = pids.filter((p) => !prot.has(p));
+  if (!s) return all;
+  for (let i = 0; i < all.length; i++) for (const p of s.procs) if (p.ppid === all[i] && !all.includes(p.pid) && !prot.has(p.pid)) all.push(p.pid);
+  return all;
+}
+
+/**
+ * Stop these PIDs for real. Returns the PIDs a stop was sent to. `expect` (pid -> process from the snapshot the
+ * decision was made on) is checked again right before each signal on POSIX: a PID that now names another process
+ * (reused) is skipped. With `tree`, descendants are stopped too, never a protected one (`prot`).
+ */
+export function realKill(pids, { tree = false, s = null, prot = new Set(), expect = null, platform = process.platform } = {}) {
   const done = [];
+  const all = tree ? treeOf(pids, s, prot) : pids.filter((p) => !prot.has(p));
   if (platform === 'win32') {
-    for (const pid of pids) {
-      try { execFileSync('taskkill.exe', ['/PID', String(pid), '/F', ...(tree ? ['/T'] : [])], { stdio: 'ignore', windowsHide: true, timeout: 30000 }); done.push(pid); }
-      catch { /* gone already, or refused: the re-check decides */ }
+    // No /T: the tree is expanded above, so a protected descendant is never stopped.
+    for (const pid of all) {
+      try { execFileSync('taskkill.exe', ['/PID', String(pid), '/F'], { stdio: 'ignore', windowsHide: true, timeout: 30000 }); if (pids.includes(pid)) done.push(pid); }
+      catch { /* gone already, or refused: the caller tells the two apart */ }
     }
     return done;
   }
-  let all = [...pids];
-  if (tree && s) for (let i = 0; i < all.length; i++) for (const p of s.procs) if (p.ppid === all[i] && !all.includes(p.pid)) all.push(p.pid);
-  for (const pid of all) { try { process.kill(pid, 'SIGTERM'); if (pids.includes(pid)) done.push(pid); } catch { /* gone or refused */ } }
-  for (let t = 0; t < 30 && all.some(alive); t++) sleep(100);
-  for (const pid of all) if (alive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* refused */ } }
+  const sent = [];
+  for (const pid of all) {
+    if (expect?.has(pid) && !sameProc(identityNow(pid, platform), expect.get(pid))) continue; // exited or reused
+    try { process.kill(pid, 'SIGTERM'); sent.push(pid); if (pids.includes(pid)) done.push(pid); } catch { /* gone or refused */ }
+  }
+  for (let t = 0; t < 30 && sent.some(alive); t++) sleep(100);
+  for (const pid of sent) if (alive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* refused */ } }
   return done;
 }
 
@@ -331,6 +368,10 @@ export function verify(closed, after, cfg, st0, now = Date.now(), deps = {}) {
   const out = new Map();
   const appBy = new Map(cfg.apps.map((a) => [a.app, a]));
   for (const r of closed) {
+    // Every target had already exited (or its PID now names another process) before a stop was sent: nothing
+    // was refused, so this is neither a refusal nor a close.
+    if (r.skipped) { out.set(r.app, 'SKIPPED (no fresh process list)'); continue; }
+    if (!r.killed.length && r.gone?.length && r.pids.every((pid) => r.gone.includes(pid))) { out.set(r.app, 'ALREADY GONE'); continue; }
     if (!r.killed.length) { st.refusedAt[r.app] = now; out.set(r.app, 'KILL REFUSED'); continue; }
     st.closedAt[r.app] = now;
     st.closeLog[r.app] = [...(st.closeLog[r.app] || []), now].filter((t) => now - t < cfg.respawn.repeatWindowMin * MIN);
@@ -365,17 +406,49 @@ function loadJson(file, what) {
 export function once(o, cfg, env = process.env, deps = {}) {
   const dir = stateDir(env);
   const simulated = !!o.snapshot;
-  const s = simulated ? normaliseSnapshot(loadJson(o.snapshot, '--snapshot')) : (deps.snapshot || readSnapshot)();
+  const raw = simulated ? loadJson(o.snapshot, '--snapshot') : null;
+  const s = simulated ? normaliseSnapshot(raw) : (deps.snapshot || readSnapshot)();
   const now = deps.now ?? Date.now();
-  // A simulated run (--snapshot) neither reads nor writes the real state, so it can never hold or release a real app.
-  const { rows, state } = assess(s, cfg, simulated ? {} : readState(dir), now, deps);
+  // A simulated run runs no busy-check command either: the snapshot may record each app's answer under "busy"
+  // ({"<app>": true|false}); with no answer recorded, the app is kept, as when a real check cannot run.
+  const simBusy = (b, app) => (raw.busy && typeof raw.busy[app] === 'boolean' ? { busy: raw.busy[app] } : { failed: true, why: 'busy check not run in a simulated run' });
+  const adeps = simulated && !deps.busy ? { ...deps, busy: simBusy } : deps;
+  // A simulated run (--snapshot) neither reads nor writes the real state, so it can never hold or release a real
+  // app. Report mode reads it but never writes it (a --watch report keeps its state in memory between checks).
+  const prior = simulated ? {} : deps.state ?? readState(dir);
+  const { rows, state } = assess(s, cfg, prior, now, adeps);
   const pct = s.commit ? Math.round(s.commit.pct * 10) / 10 : null;
   const gateOpen = o.ignoreMemory || (pct != null && pct >= cfg.closeAtPct);
   let st = state;
   const toClose = o.close && gateOpen ? rows.filter((r) => r.closable) : [];
+  if (toClose.length && !simulated) {
+    // The decision may be seconds old (a busy check can take 15 s): look again right before stopping anything,
+    // and keep only PIDs that still name the same process and are still not protected. A PID that has exited, or
+    // been reused by another process, is never signalled.
+    let fresh = null;
+    try { fresh = (deps.snapshot || readSnapshot)(); } catch { fresh = null; }
+    const freshProt = fresh ? protectedPids(fresh, cfg, deps.selfPid ?? process.pid) : new Set();
+    for (const r of toClose) {
+      r.gone = [];
+      r.target = fresh ? r.pids.filter((pid) => {
+        const ok = sameProc(fresh.byPid.get(pid), s.byPid.get(pid)) && !freshProt.has(pid);
+        if (!ok) r.gone.push(pid);
+        return ok;
+      }) : [];
+      r.fresh = fresh;
+      r.freshProt = freshProt;
+    }
+  }
+  const isAlive = deps.alive || alive;
   for (const r of toClose) {
     const a = cfg.apps.find((x) => x.app === r.app);
-    r.killed = simulated ? [...r.pids] : (deps.kill || realKill)(r.pids, { tree: a.killTree, s });
+    if (simulated) { r.killed = [...r.pids]; continue; }
+    if (!r.fresh) { r.killed = []; r.skipped = true; continue; } // no fresh process list: nothing is stopped blind
+    const expect = new Map(r.target.map((pid) => [pid, s.byPid.get(pid)]));
+    r.killed = r.target.length ? (deps.kill || realKill)(r.target, { tree: a.killTree, s: r.fresh, prot: r.freshProt, expect }) : [];
+    // A stop that failed because the process exited first is not a refusal.
+    for (const pid of r.target) if (!r.killed.includes(pid) && !isAlive(pid)) r.gone.push(pid);
+    delete r.fresh; delete r.freshProt;
   }
   let verdicts = new Map();
   if (toClose.length) {
@@ -385,13 +458,13 @@ export function once(o, cfg, env = process.env, deps = {}) {
     ({ verdicts, state: st } = verify(toClose, after, cfg, st, now, deps));
     if (!simulated) for (const r of toClose) log(dir, `${verdicts.get(r.app)} ${r.app} pids=${r.pids.join(',')} ~${r.mb} MB (${r.why})`);
   }
-  if (!simulated) writeState(dir, st);
+  if (!simulated && o.close) writeState(dir, st);
   let keptByGate = false;
   for (const r of rows) {
     if (verdicts.has(r.app)) r.verdict = verdicts.get(r.app);
     else if (r.closable && o.close && !gateOpen) { r.verdict = pct == null ? 'kept (memory unreadable)' : `kept (memory under ${cfg.closeAtPct}%)`; keptByGate = true; }
     else r.verdict = r.closable ? 'closable' : 'kept';
-    delete r.killed;
+    delete r.killed; delete r.target; delete r.gone; delete r.skipped;
   }
   const out = {
     at: new Date(now).toISOString(), mode: o.close ? 'close' : 'report', simulated,
@@ -400,7 +473,7 @@ export function once(o, cfg, env = process.env, deps = {}) {
     rows,
   };
   const refused = rows.some((r) => /REFUSED/.test(r.verdict));
-  return { out, code: refused ? 4 : keptByGate ? 3 : 0 };
+  return { out, code: refused ? 4 : keptByGate ? 3 : 0, state: st };
 }
 
 function explain(out) {
@@ -445,9 +518,11 @@ export function main(argv = process.argv.slice(2), env = process.env) {
     process.stderr.write(`app-closer: ${e.message}\n`);
     return 2;
   }
+  let mem; // a --watch report run's state, kept in memory between checks (report mode never writes the file)
   const tick = () => {
     try {
-      const r = once(o, cfg, env);
+      const r = once(o, cfg, env, !o.close && mem ? { state: mem } : {});
+      if (!o.close) mem = r.state;
       process.stdout.write(JSON.stringify(r.out) + '\n');
       if (o.explain) process.stderr.write(explain(r.out));
       return r.code;
@@ -461,7 +536,16 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   if (o.watch == null) return tick();
   const end = Date.now() + Number(o.watch) * MIN;
   log(stateDir(env), `WATCH start ${o.watch} min pid=${process.pid}`);
-  const loop = () => { const code = tick(); if (code === 2) { process.exitCode = 2; return; } if (Date.now() < end) setTimeout(loop, cfg.watchIntervalSec * 1000); else log(stateDir(env), 'WATCH end'); };
+  // The watch exits with the most serious code any check returned: 2 stops it at once; then 1, 4, 3, 0.
+  const rank = { 0: 0, 3: 1, 4: 2, 1: 3, 2: 4 };
+  let worst = 0;
+  const loop = () => {
+    const code = tick();
+    if ((rank[code] ?? 3) > rank[worst]) worst = code;
+    process.exitCode = worst;
+    if (code === 2) return;
+    if (Date.now() < end) setTimeout(loop, cfg.watchIntervalSec * 1000); else log(stateDir(env), 'WATCH end');
+  };
   loop();
   return undefined;
 }

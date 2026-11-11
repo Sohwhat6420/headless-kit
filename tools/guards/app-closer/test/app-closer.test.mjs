@@ -9,7 +9,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { normaliseConfig, normaliseSnapshot, assess, verify, procMatches, protectedPids, runBusyCheck, parseArgs, UsageError } from '../app-closer.mjs';
+import { normaliseConfig, normaliseSnapshot, assess, verify, procMatches, protectedPids, runBusyCheck, parseArgs, UsageError, once, treeOf } from '../app-closer.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(HERE, '..', 'app-closer.mjs');
@@ -194,6 +194,90 @@ test('CLI with --snapshot: report closes nothing; --close obeys the memory gate;
   r = cli(['--config', cfg, '--snapshot', hot, '--close'], { APP_CLOSER_DIR: dir });
   assert.equal(r.json.rows[0].verdict, 'CLOSED');
   assert.equal(fs.existsSync(dir), false);
+});
+
+// once() against a fake machine: deps.snapshot hands out process lists in order (decide, re-check, verify),
+// deps.kill records what it was asked to stop and stops nothing.
+const machine = (...lists) => { let i = 0; return () => snap(lists[Math.min(i++, lists.length - 1)]); };
+const onceDeps = (snapshot, extra = {}) => {
+  const asked = [];
+  return { asked, deps: { snapshot, busy: () => ({ busy: false }), selfPid: 999999, now: T0, kill: (pids) => { asked.push(...pids); return [...pids]; }, ...extra } };
+};
+const closeAll = { close: true, ignoreMemory: true };
+
+test('a PID reused by another process between the decision and the kill is never signalled', () => {
+  const cfg = cfgOf([{ app: 'Chat', match: { name: ['^chat-client'] } }]);
+  const env = { APP_CLOSER_DIR: path.join(tmp, 'reuse-' + randomUUID()) };
+  // Re-check sees pid 200 running something else (same name, other command line): skip it.
+  const reused = { ...P.chat, commandLine: 'chat-client --someone-elses-window' };
+  let t = onceDeps(machine([P.shell, P.chat], [P.shell, reused]));
+  let r = once(closeAll, cfg, env, t.deps);
+  assert.deepEqual(t.asked, [], 'the reused PID must not reach kill');
+  assert.equal(r.out.rows[0].verdict, 'ALREADY GONE');
+  assert.equal(r.code, 0);
+  // Re-check sees pid 200 now under a protected name: skip it too.
+  t = onceDeps(machine([P.shell, P.chat], [P.shell, { ...P.chat, name: 'explorer.exe' }]));
+  r = once(closeAll, cfg, env, t.deps);
+  assert.deepEqual(t.asked, []);
+  // Unchanged: it is stopped, and only it.
+  t = onceDeps(machine([P.shell, P.chat, P.chatHelper], [P.shell, P.chat, { ...P.chatHelper, path: 'C:/Other/x.exe' }], [P.shell]));
+  r = once(closeAll, cfg, env, t.deps);
+  assert.deepEqual(t.asked, [200]);
+  assert.equal(r.out.rows[0].verdict, 'CLOSED');
+  // No fresh process list at all: nothing is stopped blind.
+  let calls = 0;
+  t = onceDeps(() => { if (calls++) throw new Error('unreadable'); return snap([P.shell, P.chat]); });
+  r = once(closeAll, cfg, { APP_CLOSER_DIR: path.join(tmp, 'blind-' + randomUUID()) }, t.deps); // fresh state: no respawn hold
+  assert.deepEqual(t.asked, []);
+  assert.equal(r.out.rows[0].verdict, 'SKIPPED (no fresh process list)');
+});
+
+test('a process that exited before its kill is ALREADY GONE (exit 0), not KILL REFUSED (exit 4)', () => {
+  const cfg = cfgOf([{ app: 'Chat', match: { name: ['^chat-client'] } }]);
+  const env = { APP_CLOSER_DIR: path.join(tmp, 'gone-' + randomUUID()) };
+  // Gone before the re-check.
+  let t = onceDeps(machine([P.shell, P.chat], [P.shell]));
+  let r = once(closeAll, cfg, env, t.deps);
+  assert.equal(r.out.rows[0].verdict, 'ALREADY GONE');
+  assert.equal(r.code, 0);
+  assert.equal(r.state.refusedAt.Chat, undefined, 'an exit is not a refusal to remember');
+  // Gone between the re-check and the kill: kill sends nothing, and the PID is no longer alive.
+  t = onceDeps(machine([P.shell, P.chat]), { kill: () => [], alive: () => false });
+  r = once(closeAll, cfg, env, t.deps);
+  assert.equal(r.out.rows[0].verdict, 'ALREADY GONE');
+  assert.equal(r.code, 0);
+  // Still alive after a stop that failed: that is a refusal.
+  t = onceDeps(machine([P.shell, P.chat]), { kill: () => [], alive: () => true });
+  r = once(closeAll, cfg, env, t.deps);
+  assert.equal(r.out.rows[0].verdict, 'KILL REFUSED');
+  assert.equal(r.code, 4);
+});
+
+test('killTree never takes a protected descendant, on any platform', () => {
+  const s = snap([P.shell, P.launcher, P.helper, { pid: 303, ppid: 301, name: 'conhost.exe', path: '', commandLine: '', mb: 1 }, { pid: 304, ppid: 303, name: 'x.exe', path: '', commandLine: '', mb: 1 }]);
+  const prot = protectedPids(s, cfgOf([]), 999999);
+  assert.deepEqual(treeOf([300], s, prot), [300, 301]);
+  assert.deepEqual(treeOf([300], s, new Set()), [300, 301, 303, 304]);
+});
+
+test('report mode writes no state; a simulated run runs no busy-check command', () => {
+  const cfg = cfgOf([{ app: 'Chat', match: { name: ['^chat-client'] }, idleMinutes: 5 }]);
+  const dir = path.join(tmp, 'report-' + randomUUID());
+  const r = once({ close: false }, cfg, { APP_CLOSER_DIR: dir }, onceDeps(machine([P.shell, P.chat])).deps);
+  assert.equal(r.out.mode, 'report');
+  assert.equal(fs.existsSync(path.join(dir, 'state.json')), false);
+  assert.ok(r.state.idleSince.Chat, 'the idle clock is returned for a --watch report to keep in memory');
+  // The busy check would write a marker file if it ran.
+  const marker = path.join(tmp, 'busy-ran-' + randomUUID());
+  const argv = [process.execPath, '-e', `require('fs').writeFileSync(${JSON.stringify(marker)}, 'ran')`];
+  const bcfg = writeJson('busy-cfg.json', { verifyDelayMs: 0, apps: [{ app: 'Chat', match: { name: ['^chat-client'] }, busyCheck: { argv } }] });
+  let c = cli(['--config', bcfg, '--snapshot', writeJson('busy-none.json', { commitPct: 91, fgPid: 100, procs: [P.shell, P.chat] })]);
+  assert.equal(fs.existsSync(marker), false, 'the busy-check command must not run in a simulated run');
+  assert.equal(c.json.rows[0].verdict, 'kept');
+  assert.match(c.json.rows[0].why, /not run in a simulated run/);
+  c = cli(['--config', bcfg, '--snapshot', writeJson('busy-idle.json', { commitPct: 91, fgPid: 100, busy: { Chat: false }, procs: [P.shell, P.chat] })]);
+  assert.equal(c.json.rows[0].verdict, 'closable');
+  assert.equal(fs.existsSync(marker), false);
 });
 
 test('bad usage and bad config exit 2 with a JSON error', () => {

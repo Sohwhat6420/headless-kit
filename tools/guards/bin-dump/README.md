@@ -22,7 +22,7 @@ node --test   # 11 offline tests in a temp folder, about 4 s
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="11 of 11 tests pass: moves with the tree intact, clash suffixes, every refusal, protected paths, usage errors, dry run and mixed batches, clean-clone checks, name sanitising, a read-only manifest, restore, status" width="100%">
+<img src="docs/test-run.svg" alt="11 of 11 tests pass (each covers several cases): moves with the tree intact, clash suffixes, every refusal, protected paths, usage errors, dry run and mixed batches, clean-clone checks, name sanitising, a read-only manifest, restore, status" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -40,7 +40,7 @@ node bin-dump.mjs --restore <bin path> [--who <name>]
 | --- | --- |
 | `--who <name>` | Who is moving it: an agent, session or job name. Required for moves. `--session` is an alias. |
 | `--why <text>` | Why. Required and non-empty; it goes into the manifest. |
-| `--dry-run` | Say what would move; move nothing, write nothing. |
+| `--dry-run` | Say what would move (or, with `--restore`, come back); move nothing, write nothing. |
 | `--allow-clean-clones` | Let a git repository through if it is a plain clone (a `.git` folder, not a linked worktree) with no uncommitted changes, no unpushed commits and no stash. |
 | `--bin <dir>` | The bin folder. Or env `BIN_DUMP_DIR`, or `"bin"` in the config. Default `~/RubbishBin`. |
 | `--config <file>` | JSON config (below). Or env `BIN_DUMP_CONFIG`. |
@@ -114,7 +114,7 @@ locked `MANIFEST.tsv` never loses a record: the row goes to `MANIFEST.pending-<p
 
 ## Status
 
-Tested (offline, 11 `node:test` cases in a temporary folder with a fake home, about 4 s on Windows 11 with Node 22): moves and the folder layout, clash suffixes, every refusal (each asserting its own reason and that the path is still there), protected paths, usage errors, dry runs, a mixed batch, clean / dirty / worktree clones (skipped when `git` is not on `PATH`), name sanitising, a read-only manifest, restore, and status.
+Tested (offline, 11 `node:test` cases in a temporary folder with a fake home, about 4 s on Windows 11 with Node 22): moves and the folder layout, clash suffixes, every refusal (each asserting its own reason and that the path is still there), protected paths, usage errors (including a flag where a value belongs), dry runs (moves and restores), a mixed batch, clean / dirty / worktree clones (skipped when `git` is not on `PATH`), name sanitising, a read-only manifest, restore, and status.
 
 Not tested: cross-volume moves (the `EXDEV` copy path), Linux and macOS (nothing here is OS-specific; on those, a path is mirrored under `ROOT/`), and very long Windows paths (a deep path inside a deep bin can pass `MAX_PATH`).
 

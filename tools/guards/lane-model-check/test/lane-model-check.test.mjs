@@ -73,6 +73,23 @@ test('not yet: a missing transcript, or one with no model turn, exits 3 (poll ag
   assert.equal(r.json.verdict, 'pending');
 });
 
+test('readModels rejects with the error code when the file cannot be opened (never a silent empty result)', async () => {
+  await assert.rejects(readModels(path.join(tmp, 'gone.jsonl'), DEFAULTS), { code: 'ENOENT' });
+});
+
+// chmod cannot make a file unreadable on Windows, and root reads anything: the Linux CI runner covers this.
+test('an unreadable transcript exits 2 (error), never 1 (mismatch)', { skip: (process.platform === 'win32' || process.getuid?.() === 0) && 'needs a non-root POSIX user' }, () => {
+  const locked = path.join(tmp, 'locked.jsonl');
+  fs.copyFileSync(TRANSCRIPT, locked);
+  fs.chmodSync(locked, 0o000);
+  try {
+    const r = cli(['--transcript', locked, '--expect', 'model-large']);
+    assert.equal(r.code, 2, r.err);
+    assert.equal(r.json.verdict, 'error');
+    assert.match(r.json.error, /EACCES/);
+  } finally { fs.chmodSync(locked, 0o600); }
+});
+
 test('a torn last line (still being written) is skipped, not fatal', async () => {
   const torn = path.join(tmp, 'torn.jsonl');
   fs.writeFileSync(torn, '{"type":"assistant","message":{"model":"model-large-1"}}\n{"type":"assistant","message":{"mod');

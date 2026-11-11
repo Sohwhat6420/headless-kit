@@ -9,20 +9,20 @@
 
 **Why it's interesting:** when an agent's build or a fleet of subagents needs memory, the easy fix is "kill something", and an agent left to choose will eventually kill the wrong thing. `app-closer` turns that into a whitelist you wrote: each app is a rule (how to recognise its processes, and what keeps it open: its window is in front, a game it launched is running, a busy command says containers are up, it has not been idle for five minutes yet). Only processes that match a rule are ever stopped; OS-critical processes, a `never` list, and the tool's own process and ancestors are untouchable. It remembers what it closed, so an app the OS restarts at once is left alone instead of being killed in a loop, and it re-checks after every close to say what really happened.
 
-<p align="center"><img src="docs/demo.svg" alt="Terminal: against a recorded process list at 88% committed, app-closer reports six apps: a chat client kept until idle for 5 minutes, a game launcher kept because a game is running, a container app kept because its busy check could not run, and a dev server, a notes app and a media player closable. With --close the last three are CLOSED (simulated). A JSON line follows" width="100%"></p>
+<p align="center"><img src="docs/demo.svg" alt="Terminal: against a recorded process list at 88% committed, app-closer reports six apps: a chat client kept until idle for 5 minutes, a game launcher kept because a game is running, a container app kept because its recorded busy check says containers are running, and a dev server, a notes app and a media player closable. With --close the last three are CLOSED (simulated). A JSON line follows" width="100%"></p>
 
 ### Quick start (Node 18+, nothing to install)
 
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/guards/app-closer
 node app-closer.mjs --config examples/config.example.json --snapshot examples/snapshot.example.json --close --explain
-node --test   # 14 tests, about 17 s; the one real close stops a child process the test itself started
+node --test   # 18 tests, about 17 s; the one real close stops a child process the test itself started
 ```
 
 <details>
 <summary><b>The test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="14 of 14 tests pass: matching, protected processes, foreground, unlessRunning and unlessChildRunning, orphanOnly and unlessParent, busy checks, idle minutes, respawn holds, refused kills, the CLI with recorded snapshots, bad config, and a real close of the test's own child while a second child survives" width="100%">
+<img src="docs/test-run.svg" alt="18 of 18 tests pass: matching, protected processes, foreground, unlessRunning and unlessChildRunning, orphanOnly and unlessParent, busy checks, idle minutes, respawn holds, refused kills, a reused PID never signalled, already-gone processes, protected descendants, report mode writing nothing, the CLI with recorded snapshots, bad config, and a real close of the test's own child while a second child survives" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -43,11 +43,11 @@ node app-closer.mjs --config apps.json --snapshot procs.json [--snapshot-after a
 | `--close` | Close the closable apps. Without it, nothing is ever stopped. |
 | `--ignore-memory` | With `--close`: act at any memory level. |
 | `--watch <minutes>` | Repeat every `watchIntervalSec` for this long, one JSON line per check. |
-| `--snapshot <file>` | Use a recorded process list instead of the machine's ([example](examples/snapshot.example.json)). **Kills are simulated**, and the real state file and log are neither read nor written. |
+| `--snapshot <file>` | Use a recorded process list instead of the machine's ([example](examples/snapshot.example.json)). **Kills are simulated**, no `busyCheck` command is run (an optional `busy` map records each answer by app name; an app with no answer is kept), and the real state file and log are neither read nor written. |
 | `--snapshot-after <file>` | The list to verify simulated kills against (default: everything gone). |
 | `--explain` | Also print a table on stderr. |
 
-State and log live in `APP_CLOSER_DIR` (default `~/.app-closer/`): `state.json` (close times, idle clocks, holds) and `app-closer.log` (one line per real close).
+State and log live in `APP_CLOSER_DIR` (default `~/.app-closer/`): `state.json` (close times, idle clocks, holds) and `app-closer.log` (one line per real close). Only real `--close` runs write them; a report run reads the state and changes nothing on disk (a report `--watch` keeps its idle clocks in memory).
 
 stdout is one JSON object per check:
 
@@ -58,7 +58,7 @@ stdout is one JSON object per check:
  "rows":[{"app":"Orphaned dev server","pids":[5120],"mb":95,"closable":true,"why":"nothing keeps it open","verdict":"CLOSED"}]}
 ```
 
-Row verdicts: `closable` / `kept` (report), `CLOSED`, `RESPAWNED (n back)`, `PARTLY REFUSED`, `KILL REFUSED`, `KILLED (unverified)` (the re-check failed), `kept (memory under N%)`, `kept (memory unreadable)`.
+Row verdicts: `closable` / `kept` (report), `CLOSED`, `RESPAWNED (n back)`, `PARTLY REFUSED`, `KILL REFUSED`, `KILLED (unverified)` (the re-check failed), `ALREADY GONE` (it exited on its own before the kill), `SKIPPED (no fresh process list)` (the list could not be read again right before the kill, so nothing was stopped), `kept (memory under N%)`, `kept (memory unreadable)`.
 
 ## Config reference
 
@@ -90,7 +90,7 @@ Each app:
 | `idleMinutes` | Closable only after every other check has passed for this many minutes in a row (across runs; use `--watch` or a scheduler). Any keep resets the clock. |
 | `orphanOnly` | Only processes whose parent is gone (a dev server left behind by a closed terminal). |
 | `unlessParent` | Skip processes whose parent's name matches (the same binary started from a shell is yours, not the desktop app). |
-| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule. |
+| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule; a protected descendant (OS-critical, `never`, this process or its ancestors) and everything under it is never stopped. |
 | `respawnHold` | Default `true`. `false` turns the respawn hold off for this app (for one you reopen by hand often). |
 
 ## How it decides
@@ -100,13 +100,13 @@ Each app:
 3. **Match.** Each app takes the remaining processes that match its rule (then `orphanOnly`, `unlessParent`).
 4. **Keep checks,** first that applies wins: respawn hold, recent refusal, window in front, unknown foreground (`foregroundUnknown: keep`), `unlessRunning`, `unlessChildRunning`, `busyCheck`, `idleMinutes`.
 5. **Gate.** `--close` acts only at or above `closeAtPct`, or with `--ignore-memory`. An unreadable memory reading never opens the gate on its own.
-6. **Close and verify.** Windows: `taskkill /PID <pid> /F` (plus `/T` only with `killTree`). Linux and macOS: `SIGTERM`, then `SIGKILL` after 3 s. Then wait `verifyDelayMs`, read again, and record `CLOSED`, `RESPAWNED`, `PARTLY REFUSED` or `KILL REFUSED`.
+6. **Close and verify.** Right before stopping anything, read the process list again and stop only the PIDs that still have the same name, path and command line and are still unprotected (a PID the OS has given to another process in the meantime is left alone; with no fresh list, nothing is stopped). Windows: `taskkill /PID <pid> /F`, one PID at a time; with `killTree` the tool lists the descendants itself instead of using `/T`, so protected ones are skipped. Linux and macOS: the same identity is checked once more just before `SIGTERM`, then `SIGKILL` after 3 s. Then wait `verifyDelayMs`, read again, and record `CLOSED`, `RESPAWNED`, `ALREADY GONE`, `PARTLY REFUSED` or `KILL REFUSED`.
 
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
-| 0 | Done (a report, or every close went through). |
+| 0 | Done (a report, or every close went through). With `--watch`, the worst code of any check (2, then 1, 4, 3), and a 2 stops the watch. |
 | 1 | The check failed (no process list could be read). |
 | 2 | Bad usage or config (stdout: `{"error": "..."}`). |
 | 3 | `--close` kept closable apps because memory is under `closeAtPct` (or unreadable). |
@@ -121,7 +121,7 @@ Each app:
 
 ## Status
 
-Tested (14 `node:test` cases, about 17 s on Windows 11 with Node 22): matching, protected processes, foreground handling, every keep check, idle clocks, respawn holds, refusals, the memory gate, simulated runs (which write no state), bad config, and **one real close**: the test spawns two `node` children with random markers, closes the one whose marker is in the rule, and checks the other is still running. No test ever stops a process it did not start.
+Tested (18 `node:test` cases, about 17 s on Windows 11 with Node 22): matching, protected processes, foreground handling, every keep check, idle clocks, respawn holds, refusals, a PID reused by another process between the list and the kill (never signalled), a process that exited on its own (`ALREADY GONE`, not a refusal), protected descendants under `killTree`, report mode writing no state, the memory gate, simulated runs (which write no state and run no busy command), bad config, and **one real close**: the test spawns two `node` children with random markers, closes the one whose marker is in the rule, and checks the other is still running. No test ever stops a process it did not start.
 
 Not tested: Linux and macOS process listing and kills (written, not run), the Windows foreground reading inside a non-interactive service session (it reports unknown, so `foregroundUnknown` applies), and apps that respawn through a service. The respawn and idle defaults come from watching real desktop apps restart themselves; tune them to yours.
 

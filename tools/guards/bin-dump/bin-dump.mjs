@@ -43,7 +43,7 @@ usage:
 options:
   --who <name>           who is moving it (an agent, session or job name); --session is an alias
   --why <text>           why; required, recorded in the manifest
-  --dry-run              say what would move; move nothing, write nothing
+  --dry-run              say what would move (or, with --restore, come back); move nothing, write nothing
   --allow-clean-clones   let a git clone through if it is clean, fully pushed and has no stash
   --bin <dir>            the bin folder (env BIN_DUMP_DIR; config "bin"; default ~/RubbishBin)
   --config <file>        JSON {"bin", "protect": [paths], "gitDepth": 2} (env BIN_DUMP_CONFIG)
@@ -64,7 +64,11 @@ const say = (s) => process.stderr.write(`[bin-dump] ${s}\n`);
 
 function parseArgs(argv) {
   const o = { paths: [], dry: false, allowClones: false, status: false, help: false };
-  const need = (i, f) => { if (i + 1 >= argv.length) throw new UsageError(`${f} needs a value`); return argv[i + 1]; };
+  // A value that is itself an option (`--who --dry-run`) is a missing value, not a name.
+  const need = (i, f) => {
+    if (i + 1 >= argv.length || /^--?[A-Za-z]/.test(argv[i + 1])) throw new UsageError(`${f} needs a value`);
+    return argv[i + 1];
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') o.help = true;
@@ -120,13 +124,19 @@ function reposNear(p, depth, out = []) {
 /** Why this repository is not a throwaway clone, or null when it is clean, fully pushed and stash-free. */
 function notCleanClone(repo) {
   if (!lstatSync(join(repo, '.git')).isDirectory()) return 'is a linked worktree';
-  const git = (...a) => spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8', windowsHide: true, timeout: 60000 });
+  // --no-optional-locks: a read-only check must not take index.lock in a repository something else is using.
+  const git = (...a) => spawnSync('git', ['--no-optional-locks', '-C', repo, ...a], { encoding: 'utf8', windowsHide: true, timeout: 60000 });
   const st = git('status', '--porcelain');
   if (st.error) return 'cannot be checked (git is not on PATH)';
   if (st.status !== 0) return 'cannot be checked (git status failed)';
   if (st.stdout.trim()) return 'has uncommitted changes';
-  if (git('log', '--oneline', '--branches', '--not', '--remotes').stdout.trim()) return 'has unpushed commits';
-  if (git('stash', 'list').stdout.trim()) return 'has a stash';
+  // Any git error is "cannot be checked", never "clean": an empty stdout from a failed command proves nothing.
+  const lg = git('log', '--oneline', '--branches', '--not', '--remotes');
+  if (lg.error || lg.status !== 0) return 'cannot be checked (git log failed)';
+  if (lg.stdout.trim()) return 'has unpushed commits';
+  const sl = git('stash', 'list');
+  if (sl.error || sl.status !== 0) return 'cannot be checked (git stash list failed)';
+  if (sl.stdout.trim()) return 'has a stash';
   return null;
 }
 
@@ -202,13 +212,14 @@ function status(s) {
   return { out: { bin: s.bin, exists: true, bytes, entries: rows.length, recent: rows.slice(-10) }, code: 0 };
 }
 
-function restore(s, binPath, who) {
+function restore(s, binPath, who, dry) {
   const abs = resolve(binPath);
   if (!within(abs, s.bin) || norm(abs) === norm(s.bin)) return { out: { restored: null, error: 'not a path inside the bin' }, code: 1 };
   const row = readRows(s).reverse().find((r) => r.action === 'move' && r.bin_path && norm(r.bin_path) === norm(abs));
   if (!row) return { out: { restored: null, error: 'no manifest row for that bin path' }, code: 1 };
   if (!existsSync(abs)) return { out: { restored: null, error: 'that bin entry no longer exists' }, code: 1 };
   if (existsSync(row.original)) return { out: { restored: null, error: `something already exists at ${row.original}; move it first` }, code: 1 };
+  if (dry) { say(`would restore ${abs} -> ${row.original}`); return { out: { dryRun: true, restored: null, wouldRestore: { from: abs, to: row.original } }, code: 0 }; }
   try { move(abs, row.original); } catch (e) { return { out: { restored: null, error: `${e.code || ''} ${e.message}`.trim() }, code: 1 }; }
   appendRow(s, [new Date().toISOString(), 'restore', who || 'unknown', row.bytes, row.original, abs, `restored (moved in for: ${row.why})`]);
   say(`restored ${abs} -> ${row.original}`);
@@ -232,7 +243,7 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   }
   if (o.status) { const r = status(s); process.stdout.write(JSON.stringify(r.out) + '\n'); return r.code; }
   if (o.restore) {
-    const r = restore(s, o.restore, o.who && o.who.replace(/[^A-Za-z0-9._-]+/g, '-'));
+    const r = restore(s, o.restore, o.who && o.who.replace(/[^A-Za-z0-9._-]+/g, '-'), o.dry);
     if (r.out.error) say(`restore refused: ${r.out.error}.`);
     process.stdout.write(JSON.stringify({ bin: s.bin, ...r.out }) + '\n');
     return r.code;

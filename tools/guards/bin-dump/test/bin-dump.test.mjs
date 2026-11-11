@@ -113,6 +113,13 @@ test('usage errors exit 2 and move nothing', () => {
   const bad = join(work, 'bad.json');
   writeFileSync(bad, '{"protect": "nope"}');
   assert.equal(bd([f, '--who', 's', '--why', 'w', '--config', bad]).code, 2);
+  // An option where a value belongs is a missing value: `--who --dry-run` must not name the mover "--dry-run"
+  // (and so silently turn a dry run into a real move).
+  for (const args of [[f, '--who', '--dry-run', '--why', 'w'], [f, '--who', 's', '--why', '--dry-run'], ['--restore', '--dry-run']]) {
+    const r = bd(args);
+    assert.equal(r.code, 2, args.join(' '));
+    assert.match(r.json.error, /needs a value/);
+  }
   assert.ok(existsSync(f));
 });
 
@@ -192,6 +199,15 @@ test('--restore moves an entry back and refuses when something is in the way', (
   assert.match(r.json.error, /already exists/);
   assert.equal(readFileSync(t, 'utf8'), 'new occupant');
   bd([t, '--who', 's', '--why', 'clear the way']);
+  // --dry-run with --restore says what would happen and changes nothing: no move, no manifest row.
+  const rowsBefore = manifest().length;
+  r = bd(['--restore', binPath, '--who', 'undo', '--dry-run']);
+  assert.equal(r.code, 0, r.err);
+  assert.equal(r.json.dryRun, true);
+  assert.equal(r.json.wouldRestore.to, t);
+  assert.ok(existsSync(binPath), 'a dry-run restore must leave the bin entry where it is');
+  assert.ok(!existsSync(t), 'a dry-run restore must not put the file back');
+  assert.equal(manifest().length, rowsBefore, 'a dry-run restore must not write a manifest row');
   r = bd(['--restore', binPath, '--who', 'undo']);
   assert.equal(r.code, 0, r.err);
   assert.equal(readFileSync(t, 'utf8'), 'r');

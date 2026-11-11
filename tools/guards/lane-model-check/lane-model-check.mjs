@@ -19,10 +19,10 @@
  * Default: the first model turn decides (the file is streamed and closed at the first hit). --all reads every
  * turn and fails if any of them used another model.
  *
- * stdout: one JSON object. Exit 0 match · 1 mismatch · 2 bad usage or config · 3 not yet (no transcript or no
- * model turn yet: poll again).
+ * stdout: one JSON object. Exit 0 match · 1 mismatch · 2 bad usage, bad config or an unreadable file · 3 not yet
+ * (no transcript or no model turn yet: poll again). Exit 1 means only "a different model ran", never an I/O error.
  */
-import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, openSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -53,7 +53,7 @@ usage: node lane-model-check.mjs (--transcript <file> | --session <id>) (--expec
   --help               this text
 
 stdout: one JSON line {ok, verdict, expected, actual, transcript, ...}
-exit:   0 match · 1 mismatch · 2 bad usage or config · 3 not yet (no transcript or no model turn yet)`;
+exit:   0 match · 1 mismatch · 2 bad usage, config or an unreadable file · 3 not yet (no transcript or no model turn yet)`;
 
 export class UsageError extends Error {}
 
@@ -139,7 +139,11 @@ export function expectedFromPlan(planPath, lane, cfg) {
 
 /** Stream the transcript; return the model turns seen (first only, unless all). */
 export async function readModels(file, cfg, all = false) {
-  const rl = createInterface({ input: createReadStream(file, { encoding: 'utf8' }), crlfDelay: Infinity });
+  // Open synchronously so an unreadable file (EACCES, EPERM) throws here, with its code, rather than as a stream
+  // error that readline may not forward to the loop below.
+  const fd = openSync(file, 'r');
+  const input = createReadStream(null, { fd, encoding: 'utf8' });
+  const rl = createInterface({ input, crlfDelay: Infinity });
   const seen = [];
   const pre = typeof cfg.turn.equals === 'string' ? JSON.stringify(cfg.turn.equals) : null; // cheap pre-filter before parsing
   let lineNo = 0;
@@ -155,7 +159,7 @@ export async function readModels(file, cfg, all = false) {
       seen.push({ model: m, line: lineNo });
       if (!all) break;
     }
-  } finally { rl.close(); }
+  } finally { rl.close(); input.destroy(); }
   return seen;
 }
 
@@ -194,9 +198,12 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
     if (o.help) { process.stdout.write(HELP + '\n'); return 0; }
     r = await check(o, env);
   } catch (e) {
-    if (!(e instanceof UsageError)) throw e;
-    process.stdout.write(JSON.stringify({ ok: false, verdict: 'error', error: e.message }) + '\n');
-    process.stderr.write(`lane-model-check: ${e.message}\n`);
+    // A transcript, plan or folder that cannot be read (EACCES, EPERM, EISDIR...) is an error (2), never a
+    // "mismatch" (1): a caller acting on exit 1 would stop a lane that may be running the right model.
+    if (!(e instanceof UsageError) && !e.code) throw e;
+    const msg = e instanceof UsageError ? e.message : `cannot read: ${e.code} ${e.path || ''}`.trim();
+    process.stdout.write(JSON.stringify({ ok: false, verdict: 'error', error: msg }) + '\n');
+    process.stderr.write(`lane-model-check: ${msg}\n`);
     return 2;
   }
   process.stdout.write(JSON.stringify(r.out) + '\n');
