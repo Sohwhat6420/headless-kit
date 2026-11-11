@@ -107,8 +107,8 @@ name for keys and personal data and reports the type and line, never the value.
 
 The hooks fail open (an error means no output, never a block), and none of them approves anything on your behalf:
 `plan-depth` never outputs `permissionDecision: "allow"`, and `dismissal-watch` only blocks if you opt in.
-`instruction-keeper` redacts token shapes before it stores anything. Guards that act (`app-closer`, `bin-dump`)
-report by default and move rather than delete.
+`instruction-keeper` redacts token shapes before it stores anything. Of the guards that act, `app-closer`
+only reports unless you pass `--close`, and `bin-dump` moves rather than deletes (`--dry-run` to preview first).
 
 ## Roadmap
 

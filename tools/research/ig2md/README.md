@@ -7,7 +7,7 @@
 
 **Turn a public Instagram post, reel or carousel URL into schema-versioned JSON plus Markdown (and frames) that an agent can read.** Logged-out only. One Node file plus a helper, zero dependencies.
 
-**Why it's interesting:** agents get handed Instagram links constantly, and they can't read them: the page is a login-walled app shell. The tools that *can* (yt-dlp, gallery-dl, instaloader, the public embed page) each give a different, partial answer in a different format. `ig2md` runs whichever of them you have installed, one polite request at a time, merges the answers into one validated JSON record with provenance (`sources[]` says which tool worked and why the others failed), and writes a Markdown file an agent can read directly. It never logs in, never uses cookies, and it stops on a rate limit instead of retrying.
+**Why it's interesting:** agents get handed Instagram links constantly, and they can't read them: the page is a login-walled app shell. The tools that *can* (yt-dlp, gallery-dl, instaloader, the public embed page) each give a different, partial answer in a different format. `ig2md` runs whichever of them you have installed, one polite request at a time, merges the answers into one validated JSON record with provenance (`sources[]` says which tool worked and why the others failed), and writes a Markdown file an agent can read directly. It never logs in, never uses cookies, and it stops on a rate limit instead of retrying: yt-dlp and gallery-dl run with their own retries off, and instaloader with one connection attempt.
 
 <p align="center"><img src="docs/demo.svg" alt="Terminal: ig2md --check lists which optional tools are installed; a pasted message containing a reel URL becomes a JSON summary after two polite requests; the Markdown file starts with front matter, an untrusted-data banner and the caption; a story URL exits 3 with no request made" width="100%"></p>
 
@@ -16,13 +16,13 @@
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/research/ig2md
 node ig2md.mjs --check && node ig2md.mjs "https://www.instagram.com/reel/<shortcode>/"
-node --test                           # 21 offline tests, about 3 s
+node --test                           # 23 offline tests, about 3 s
 ```
 
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="21 of 21 tests pass: URL parsing, mappers for every source, merge and provenance, schema rejection, redaction, chromiumPath refusals, the request cap, logged-out flags, missing tools, embed page over a local stub, a fake Playwright launched headless, login wall, rate limit, stories, the CLI" width="100%">
+<img src="docs/test-run.svg" alt="23 of 23 tests pass: URL parsing, mappers for every source, merge and provenance, schema rejection, redaction, chromiumPath refusals, the request cap, logged-out flags, missing tools, embed page over a local stub, a fake Playwright launched headless, login wall, rate limits (including one after an earlier source answered, and one on a media download), stories, the CLI" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as files plus a JSON line, standard library only.
@@ -92,7 +92,7 @@ The request gate counts each tool call or page load (not every image a page pull
 | 1 | No source returned anything (deleted, private, or nothing installed: try `--check`). |
 | 2 | Bad usage or config (stdout: `{"ok": false, "error": "..."}`). |
 | 3 | Instagram wants a login (a login wall, or a story). Not retried; nothing is worked around. |
-| 4 | Rate limited. The whole batch stops; there is no retry and no rotation. |
+| 4 | Rate limited, by any source and at any step (a media download too). The whole batch stops; there is no retry and no rotation. If an earlier source had already answered for that post, what it returned is still written. |
 
 With several URLs, the exit code is the first failure's.
 
@@ -106,7 +106,7 @@ With several URLs, the exit code is the first failure's.
 
 ## Status
 
-Tested (offline, 21 `node:test` cases, about 3 s on Windows 11 with Node 22): URL parsing (12 shapes), every mapper against fixtures, merge order and provenance, schema validation and rejection, Markdown, redaction, error classes, chromiumPath refusals, the request cap and delay, the exact flags handed to each tool (via a fake CLI that logs its arguments), missing tools, the embed page over a local HTTP stub (200, 404, 429), a fake Playwright module (headless, fresh context, no channel or profile), the login wall, the rate limit stopping a batch, stories, `--from-file` and the CLI. The demo above is a real run against the same stand-ins.
+Tested (offline, 23 `node:test` cases, about 3 s on Windows 11 with Node 22): URL parsing (12 shapes), every mapper against fixtures, merge order and provenance, schema validation and rejection, Markdown, redaction, error classes, chromiumPath refusals, the request cap and delay, the exact flags handed to each tool (via a fake CLI that logs its arguments), missing tools, the embed page over a local HTTP stub (200, 404, 429), a fake Playwright module (headless, fresh context, no channel or profile), the login wall, a rate limit stopping a batch (also when an earlier source had already answered, and when it hits a media download), stories, `--from-file` and the CLI. The demo above is a real run against the same stand-ins.
 
 Not tested here: live Instagram. An earlier version of this code was run once by hand against one public video post, where yt-dlp and the embed page both worked logged-out; gallery-dl, instaloader and a live carousel have never been run live. The embed page parser relies on Instagram's current markup and will need updating when it changes. Only Node 22 was run; the code uses nothing newer than Node 18 (`fetch`, `AbortSignal.timeout`), but Node 18 itself was not tried.
 

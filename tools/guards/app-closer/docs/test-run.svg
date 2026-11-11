@@ -1,40 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="981" height="714" viewBox="0 0 981 714" role="img" aria-label="app-closer: test suite (one real close, of its own child)">
-<rect x="0.5" y="0.5" width="980" height="713" rx="10" fill="#0d1117" stroke="#30363d"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="734" viewBox="0 0 981 734" role="img" aria-label="app-closer: test suite (one real close, of its own child)">
+<rect x="0.5" y="0.5" width="980" height="733" rx="10" fill="#0d1117" stroke="#30363d"/>
 <path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
 <circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
 <text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">app-closer: test suite (one real close, of its own child)</text>
 <g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
 <text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
-<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> matching: every given field must match (any regex within a field); not* fields exclude (1.6151ms)</text>
-<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> protected: OS-critical names, the never list, this process and its ancestors are never rows (1.0333ms)</text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> matching: every given field must match (any regex within a field); not* fields exclude (2.1957ms)</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> protected: OS-critical names, the never list, this process and its ancestors are never rows (1.7552ms)</text>
 <text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> the window in front keeps its app (whole parent chain); an unknown foreground keeps it unless told otherwise (</text>
-<text x="20" y="146" xml:space="preserve">  0.5184ms)</text>
-<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> unlessRunning and unlessChildRunning keep a launcher while its game is open (0.5649ms)</text>
-<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> orphanOnly takes only processes whose parent is gone; unlessParent skips ones started from a shell (0.3414ms)</text>
-<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> busyCheck: busy keeps it, idle lets it close, a check that fails keeps it to be safe (0.2459ms)</text>
-<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> runBusyCheck runs the argv with no shell: output, exit code, and a missing command (200.6753ms)</text>
-<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> idleMinutes: closable only after the app has been idle that long across runs; a keep resets the clock (0.3507m</text>
+<text x="20" y="146" xml:space="preserve">  1.0241ms)</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> unlessRunning and unlessChildRunning keep a launcher while its game is open (1.09ms)</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> orphanOnly takes only processes whose parent is gone; unlessParent skips ones started from a shell (0.5216ms)</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> busyCheck: busy keeps it, idle lets it close, a check that fails keeps it to be safe (0.3293ms)</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> runBusyCheck runs the argv with no shell: output, exit code, and a missing command (259.5276ms)</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> idleMinutes: closable only after the app has been idle that long across runs; a keep resets the clock (0.3869m</text>
 <text x="20" y="266" xml:space="preserve">  s)</text>
-<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> respawn: an app the OS restarts at once is held, then released after holdMin; repeated closes also hold (1.151</text>
-<text x="20" y="306" xml:space="preserve">  8ms)</text>
-<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> refused kills: none sent is KILL REFUSED, a survivor is PARTLY REFUSED; both wait refusedRetryMin (0.5191ms)</text>
-<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> CLI with --snapshot: report closes nothing; --close obeys the memory gate; kills are simulated (452.7744ms)</text>
-<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a PID reused by another process between the decision and the kill is never signalled (7.5879ms)</text>
-<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a process that exited before its kill is ALREADY GONE (exit 0), not KILL REFUSED (exit 4) (4.5071ms)</text>
-<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> killTree never takes a protected descendant, on any platform (0.2297ms)</text>
-<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> report mode writes no state; a simulated run runs no busy-check command (123.4279ms)</text>
-<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> bad usage and bad config exit 2 with a JSON error (297.8629ms)</text>
-<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a real close stops only the spawned child that matches; report mode and a non-matching child are left alone (5</text>
-<text x="20" y="486" xml:space="preserve">  939.1831ms)</text>
-<text x="20" y="506" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --help exits 0 (61.6434ms)</text>
-<text x="20" y="526" xml:space="preserve">ℹ tests 18</text>
-<text x="20" y="546" xml:space="preserve">ℹ suites 0</text>
-<text x="20" y="566" xml:space="preserve">ℹ pass 18</text>
-<text x="20" y="586" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
-<text x="20" y="606" xml:space="preserve">ℹ cancelled 0</text>
-<text x="20" y="626" xml:space="preserve">ℹ skipped 0</text>
-<text x="20" y="646" xml:space="preserve">ℹ todo 0</text>
-<text x="20" y="666" xml:space="preserve">ℹ duration_ms 17105.7859</text>
-<text x="20" y="686" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> respawn: an app the OS restarts at once is held, then released after holdMin; repeated closes also hold (1.441</text>
+<text x="20" y="306" xml:space="preserve">  9ms)</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> refused kills: none sent is KILL REFUSED, a survivor is PARTLY REFUSED; both wait refusedRetryMin (0.5875ms)</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> CLI with --snapshot: report closes nothing; --close obeys the memory gate; kills are simulated (582.6123ms)</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a PID reused by another process between the decision and the kill is never signalled (10.9158ms)</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a process that exited before its kill is ALREADY GONE (exit 0), not KILL REFUSED (exit 4) (7.0451ms)</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> killTree never takes a protected descendant, on any platform (0.5132ms)</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> killTree skips a process older than the PID it names as parent (a reused ParentProcessId) (0.2972ms)</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> report mode writes no state; a simulated run runs no busy-check command (159.275ms)</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> bad usage and bad config exit 2 with a JSON error (366.2925ms)</text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a real close stops only the spawned child that matches; report mode and a non-matching child are left alone (5</text>
+<text x="20" y="506" xml:space="preserve">  504.5859ms)</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --help exits 0 (63.994ms)</text>
+<text x="20" y="546" xml:space="preserve">ℹ tests 19</text>
+<text x="20" y="566" xml:space="preserve">ℹ suites 0</text>
+<text x="20" y="586" xml:space="preserve">ℹ pass 19</text>
+<text x="20" y="606" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+<text x="20" y="626" xml:space="preserve">ℹ cancelled 0</text>
+<text x="20" y="646" xml:space="preserve">ℹ skipped 0</text>
+<text x="20" y="666" xml:space="preserve">ℹ todo 0</text>
+<text x="20" y="686" xml:space="preserve">ℹ duration_ms 17002.5636</text>
+<text x="20" y="706" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
 </g>
 </svg>

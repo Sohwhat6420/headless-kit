@@ -298,3 +298,33 @@ test('CLI: --help 0, usage errors 2 as JSON, --check, a batch stops on 429, no c
   const rl = cli(['--config', cfgFile, 'https://www.instagram.com/p/R1/', 'https://www.instagram.com/p/R2/'], { env: { FAKE_MODE: '429' } });
   assert.equal(rl.code, 4); assert.equal(rl.json.results.length, 1, 'the second URL is never tried'); assert.equal(rl.json.requests, 1);
 });
+
+test('a 429 after an earlier source returned content still stops the batch (exit 4) and keeps what was fetched', () => {
+  const dir = tmp(); const cfgFile = join(dir, 'cfg.json');
+  // No media download, so yt-dlp alone is never "complete" and gallery-dl runs next.
+  writeFileSync(cfgFile, JSON.stringify({ outDir: join(dir, 'out'), minDelayMs: 0, maxDelayMs: 0, screenshot: false, downloadMedia: false, sources: ['yt-dlp', 'gallery-dl'],
+    playwrightModule: join(dir, 'none'), tools: { ytdlp: tool('yt-dlp'), gallerydl: tool('gallery-dl'), ffmpeg: tool('ffmpeg'), instaloader: MISSING } }));
+  const r = cli(['--config', cfgFile, 'https://www.instagram.com/p/A1/', 'https://www.instagram.com/p/A2/'], { env: { FAKE_MODE_GALLERY_DL: '429' } });
+  assert.equal(r.code, 4, r.err);
+  assert.equal(r.json.results.length, 1, 'the second URL is never tried');
+  assert.equal(r.json.requests, 2, 'yt-dlp metadata, then gallery-dl metadata, nothing more');
+  const [one] = r.json.results;
+  assert.equal(one.exit, 4); assert.match(one.error, /Rate limited.*saved/);
+  assert.deepEqual(one.sources.map((s) => [s.name, s.ok]), [['yt-dlp', true], ['gallery-dl', false]]);
+  const post = JSON.parse(readFileSync(join(dir, 'out', 'A1', 'A1.json'), 'utf8'));
+  assert.deepEqual(validate(post, SCHEMA), []); assert.ok(post.caption, 'the yt-dlp caption was kept');
+  assert.ok(!existsSync(join(dir, 'out', 'A2')), 'nothing was fetched for the second URL');
+});
+
+test('a 429 on a media download stops the batch too; the metadata is kept and the source says why', () => {
+  const dir = tmp(); const cfgFile = join(dir, 'cfg.json');
+  writeFileSync(cfgFile, JSON.stringify({ outDir: join(dir, 'out'), minDelayMs: 0, maxDelayMs: 0, screenshot: false, sources: ['yt-dlp', 'gallery-dl'],
+    playwrightModule: join(dir, 'none'), tools: { ytdlp: tool('yt-dlp'), gallerydl: tool('gallery-dl'), ffmpeg: tool('ffmpeg'), instaloader: MISSING } }));
+  const r = cli(['--config', cfgFile, 'https://www.instagram.com/reel/M1/', 'https://www.instagram.com/reel/M2/'], { env: { FAKE_MEDIA: '429' } });
+  assert.equal(r.code, 4, r.err);
+  assert.equal(r.json.results.length, 1); assert.equal(r.json.requests, 2, 'yt-dlp metadata and media; gallery-dl never runs');
+  assert.deepEqual(r.json.results[0].sources.map((s) => [s.name, s.ok]), [['yt-dlp', true]]);
+  assert.match(r.json.results[0].sources[0].error, /media download: .*429/);
+  const post = JSON.parse(readFileSync(join(dir, 'out', 'M1', 'M1.json'), 'utf8'));
+  assert.ok(post.caption); assert.equal(post.media[0].file ?? null, null, 'no file was saved');
+});

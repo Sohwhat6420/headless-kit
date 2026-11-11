@@ -230,6 +230,7 @@ test('a PID reused by another process between the decision and the kill is never
   r = once(closeAll, cfg, { APP_CLOSER_DIR: path.join(tmp, 'blind-' + randomUUID()) }, t.deps); // fresh state: no respawn hold
   assert.deepEqual(t.asked, []);
   assert.equal(r.out.rows[0].verdict, 'SKIPPED (no fresh process list)');
+  assert.equal(r.code, 1, 'a close that could not look again failed its check: exit 1, never 0');
 });
 
 test('a process that exited before its kill is ALREADY GONE (exit 0), not KILL REFUSED (exit 4)', () => {
@@ -258,6 +259,17 @@ test('killTree never takes a protected descendant, on any platform', () => {
   const prot = protectedPids(s, cfgOf([]), 999999);
   assert.deepEqual(treeOf([300], s, prot), [300, 301]);
   assert.deepEqual(treeOf([300], s, new Set()), [300, 301, 303, 304]);
+});
+
+test('killTree skips a process older than the PID it names as parent (a reused ParentProcessId)', () => {
+  // 300 started at t=5000; 401 names 300 as parent but started at t=1000, under an earlier owner of PID 300.
+  const s = snap([{ ...P.launcher, started: 5000 }, { ...P.helper, started: 6000 }, { pid: 401, ppid: 300, name: 'stranger.exe', path: '', commandLine: '', mb: 1, started: 1000 },
+    { pid: 402, ppid: 401, name: 'its-child.exe', path: '', commandLine: '', mb: 1, started: 1500 }]);
+  assert.deepEqual(treeOf([300], s), [300, 301]);
+  // Without creation times (a recorded list, macOS) the tree is what the parent ids say.
+  const bare = snap([P.launcher, P.helper, { pid: 401, ppid: 300, name: 'stranger.exe', path: '', commandLine: '', mb: 1 }]);
+  assert.deepEqual(treeOf([300], bare), [300, 301, 401]);
+  assert.equal(normaliseSnapshot({ procs: [{ pid: 7, ppid: 1, name: 'a', started: '' }] }).procs[0].started, null);
 });
 
 test('report mode writes no state; a simulated run runs no busy-check command', () => {

@@ -16,13 +16,13 @@
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/guards/app-closer
 node app-closer.mjs --config examples/config.example.json --snapshot examples/snapshot.example.json --close --explain
-node --test   # 18 tests, about 17 s; the one real close stops a child process the test itself started
+node --test   # 19 tests, about 17 s; the one real close stops a child process the test itself started
 ```
 
 <details>
 <summary><b>The test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="18 of 18 tests pass: matching, protected processes, foreground, unlessRunning and unlessChildRunning, orphanOnly and unlessParent, busy checks, idle minutes, respawn holds, refused kills, a reused PID never signalled, already-gone processes, protected descendants, report mode writing nothing, the CLI with recorded snapshots, bad config, and a real close of the test's own child while a second child survives" width="100%">
+<img src="docs/test-run.svg" alt="19 of 19 tests pass: matching, protected processes, foreground, unlessRunning and unlessChildRunning, orphanOnly and unlessParent, busy checks, idle minutes, respawn holds, refused kills, a reused PID never signalled, already-gone processes, protected descendants, a reused parent PID under killTree, report mode writing nothing, the CLI with recorded snapshots, bad config, and a real close of the test's own child while a second child survives" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -90,7 +90,7 @@ Each app:
 | `idleMinutes` | Closable only after every other check has passed for this many minutes in a row (across runs; use `--watch` or a scheduler). Any keep resets the clock. |
 | `orphanOnly` | Only processes whose parent is gone (a dev server left behind by a closed terminal). |
 | `unlessParent` | Skip processes whose parent's name matches (the same binary started from a shell is yours, not the desktop app). |
-| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule; a protected descendant (OS-critical, `never`, this process or its ancestors) and everything under it is never stopped. |
+| `killTree` | Default `false`: stop only the matched processes. `true` also stops their child processes, which may not match the rule; a protected descendant (OS-critical, `never`, this process or its ancestors) and everything under it is never stopped, nor a process older than the PID it names as its parent (that parent number was reused). |
 | `respawnHold` | Default `true`. `false` turns the respawn hold off for this app (for one you reopen by hand often). |
 
 ## How it decides
@@ -107,7 +107,7 @@ Each app:
 | Code | Meaning |
 | --- | --- |
 | 0 | Done (a report, or every close went through). With `--watch`, the worst code of any check (2, then 1, 4, 3), and a 2 stops the watch. |
-| 1 | The check failed (no process list could be read). |
+| 1 | The check failed: no process list could be read, or with `--close`, the fresh one right before the kills could not (`SKIPPED`; nothing was stopped). |
 | 2 | Bad usage or config (stdout: `{"error": "..."}`). |
 | 3 | `--close` kept closable apps because memory is under `closeAtPct` (or unreadable). |
 | 4 | A kill was refused (`KILL REFUSED` or `PARTLY REFUSED`). |
@@ -121,7 +121,7 @@ Each app:
 
 ## Status
 
-Tested (18 `node:test` cases, about 17 s on Windows 11 with Node 22): matching, protected processes, foreground handling, every keep check, idle clocks, respawn holds, refusals, a PID reused by another process between the list and the kill (never signalled), a process that exited on its own (`ALREADY GONE`, not a refusal), protected descendants under `killTree`, report mode writing no state, the memory gate, simulated runs (which write no state and run no busy command), bad config, and **one real close**: the test spawns two `node` children with random markers, closes the one whose marker is in the rule, and checks the other is still running. No test ever stops a process it did not start.
+Tested (19 `node:test` cases, about 17 s on Windows 11 with Node 22): matching, protected processes, foreground handling, every keep check, idle clocks, respawn holds, refusals, a PID reused by another process between the list and the kill (never signalled), a process that exited on its own (`ALREADY GONE`, not a refusal), protected descendants and a reused parent PID under `killTree`, report mode writing no state, the memory gate, simulated runs (which write no state and run no busy command), bad config, and **one real close**: the test spawns two `node` children with random markers, closes the one whose marker is in the rule, and checks the other is still running. No test ever stops a process it did not start.
 
 Not tested: Linux and macOS process listing and kills (written, not run), the Windows foreground reading inside a non-interactive service session (it reports unknown, so `foregroundUnknown` applies), and apps that respawn through a service. The respawn and idle defaults come from watching real desktop apps restart themselves; tune them to yours.
 

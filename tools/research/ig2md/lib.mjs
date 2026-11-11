@@ -158,7 +158,7 @@ export function merge(parsed, results, ctx = {}) {
     comments: [],
     fetched_at: ctx.now || new Date().toISOString(),
     access: ctx.access || 'anonymous',
-    sources: results.map((r) => ({ name: r.name, ok: Boolean(r.ok), error: r.ok ? null : String(r.error || 'failed').slice(0, 300) })),
+    sources: results.map((r) => ({ name: r.name, ok: Boolean(r.ok), error: r.ok ? (r.warning ? String(r.warning).slice(0, 300) : null) : String(r.error || 'failed').slice(0, 300) })),
   };
 }
 

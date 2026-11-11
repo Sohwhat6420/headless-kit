@@ -106,9 +106,16 @@ export function makeGate(cfg, log, sleep = (ms) => new Promise((r) => setTimeout
 const lastLine = (s, code) => redact(String(s || '').trim().split(/\r?\n/).pop() || `exit ${code}`);
 
 // ---------- sources ----------
-// yt-dlp and gallery-dl get --ignore-config so a user config can never add cookies or a login behind our back.
+// yt-dlp and gallery-dl get --ignore-config so a user config can never add cookies or a login behind our back, and
+// no retries of their own: one refusal is an answer, and a rate limit stops the batch here.
+// A media download that fails after the metadata worked keeps the metadata; a rate limit there still stops the batch.
+function mediaFailed(name, data, d) {
+  const warning = `media download: ${lastLine(d.err, d.code)}`;
+  return { name, ok: true, data, warning, rateLimited: classifyError(d.err) === 'rate_limited' };
+}
+
 async function srcYtDlp(t, cfg, gate, dirs, o) {
-  const base = ['--ignore-config', '--no-cookies', '--no-warnings', '--no-playlist'];
+  const base = ['--ignore-config', '--no-cookies', '--no-warnings', '--no-playlist', '--retries', '0', '--extractor-retries', '0'];
   await gate.take('yt-dlp metadata');
   const r = await run(cfg.tools.ytdlp, [...base, '--dump-single-json', t.url], { timeoutMs: 120000 });
   if (r.code !== 0) return { name: 'yt-dlp', ok: false, error: lastLine(r.err, r.code), cls: classifyError(r.err) };
@@ -118,22 +125,24 @@ async function srcYtDlp(t, cfg, gate, dirs, o) {
   if (o.download && data) {
     await gate.take('yt-dlp media');
     const d = await run(cfg.tools.ytdlp, [...base, '-o', join(dirs.media, '%(autonumber)s.%(ext)s'), t.url], { timeoutMs: 300000 });
-    if (d.code === 0) attachFiles(data, dirs);
+    if (d.code !== 0) return mediaFailed('yt-dlp', data, d);
+    attachFiles(data, dirs);
   }
   return { name: 'yt-dlp', ok: true, data };
 }
 
 async function srcGalleryDl(t, cfg, gate, dirs, o) {
   await gate.take('gallery-dl metadata');
-  const r = await run(cfg.tools.gallerydl, ['--ignore-config', '-j', t.url], { timeoutMs: 120000 });
+  const r = await run(cfg.tools.gallerydl, ['--ignore-config', '--retries', '0', '-j', t.url], { timeoutMs: 120000 });
   if (r.code !== 0) return { name: 'gallery-dl', ok: false, error: lastLine(r.err, r.code), cls: classifyError(r.err) };
   let j; try { j = JSON.parse(r.out); } catch { return { name: 'gallery-dl', ok: false, error: 'unparseable JSON', cls: 'other' }; }
   const data = mapGalleryDl(j);
   if (!data) return { name: 'gallery-dl', ok: false, error: 'no media in output', cls: 'other' };
   if (o.download) {
     await gate.take('gallery-dl media');
-    const d = await run(cfg.tools.gallerydl, ['--ignore-config', '-D', dirs.media, t.url], { timeoutMs: 300000 });
-    if (d.code === 0) attachFiles(data, dirs);
+    const d = await run(cfg.tools.gallerydl, ['--ignore-config', '--retries', '0', '-D', dirs.media, t.url], { timeoutMs: 300000 });
+    if (d.code !== 0) return mediaFailed('gallery-dl', data, d);
+    attachFiles(data, dirs);
   }
   return { name: 'gallery-dl', ok: true, data };
 }
@@ -179,8 +188,8 @@ async function srcInstaloader(t, cfg, gate, dirs) {
   const tmp = join(dirs.base, '_instaloader');
   mkdirSync(tmp, { recursive: true });
   await gate.take('instaloader');
-  // No --login and no --load-cookies: instaloader stays anonymous.
-  const r = await run(cfg.tools.instaloader, ['--quiet', '--no-video-thumbnails', '--no-compress-json', '--no-pictures', '--no-videos', '--dirname-pattern', tmp, '--', `-${t.shortcode}`], { timeoutMs: 120000 });
+  // No --login and no --load-cookies: instaloader stays anonymous. One connection attempt: no retries of its own.
+  const r = await run(cfg.tools.instaloader, ['--quiet', '--max-connection-attempts', '1', '--no-video-thumbnails', '--no-compress-json', '--no-pictures', '--no-videos', '--dirname-pattern', tmp, '--', `-${t.shortcode}`], { timeoutMs: 120000 });
   if (r.code !== 0) return { name: 'instaloader', ok: false, error: lastLine(r.err, r.code), cls: classifyError(r.err) };
   const f = readdirSync(tmp).find((x) => x.endsWith('.json'));
   if (!f) return { name: 'instaloader', ok: false, error: 'no JSON written', cls: 'other' };
@@ -252,7 +261,8 @@ export async function processTarget(t, cfg, opts = {}) {
     results.push(r);
     if (r.shot) shot = r.shot;
     if (!r.ok) log(`${name}: ${r.error}`);
-    if (!r.ok && r.cls === 'rate_limited') { worst = 'rate_limited'; log(`${name}: rate limited, stopping (no retries)`); break; }
+    if (r.warning) log(`${name}: ${r.warning}`);
+    if ((!r.ok && r.cls === 'rate_limited') || r.rateLimited) { worst = 'rate_limited'; log(`${name}: rate limited, stopping (no retries)`); break; }
     if (!r.ok && r.cls === 'needs_login') worst = worst || 'needs_login';
   }
 
@@ -266,7 +276,10 @@ export async function processTarget(t, cfg, opts = {}) {
     return { exit: code, error: msg, sources: post.sources };
   }
   await makeFrames(post, cfg, dirs, log);
-  return finish(post, dirs, t);
+  const out = finish(post, dirs, t);
+  // A rate limit after an earlier source returned content: keep what was fetched, but still stop the batch.
+  if (worst === 'rate_limited' && out.exit === EXIT.OK) return { ...out, exit: EXIT.RATE_LIMITED, error: 'Rate limited by Instagram; saved what the earlier sources returned, then stopped (no retries).' };
+  return out;
 }
 
 async function fromFile(t, cfg, opts, dirs, log) {

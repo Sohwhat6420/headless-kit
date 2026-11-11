@@ -18,7 +18,7 @@
  * instead of being killed in a loop; how long each app has been idle; kills the OS refused.
  *
  * stdout: one JSON object per check. stderr: a human table with --explain, and error text.
- * Exit 0 done · 1 a check failed (no process list) · 2 bad usage or config · 3 --close kept closable apps because
+ * Exit 0 done · 1 a check failed (no process list, or none right before a kill) · 2 bad usage or config · 3 --close kept closable apps because
  * memory is under closeAtPct (or unreadable) · 4 a kill was refused.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -143,6 +143,7 @@ export function normaliseSnapshot(raw) {
   const procs = (Array.isArray(raw.procs) ? raw.procs : raw.procs ? [raw.procs] : []).map((p) => ({
     pid: Number(p.pid ?? p.ProcessId), ppid: Number(p.ppid ?? p.ParentProcessId ?? 0), name: String(p.name ?? p.Name ?? ''),
     path: String(p.path ?? p.ExecutablePath ?? ''), commandLine: String(p.commandLine ?? p.CommandLine ?? ''), mb: Number(p.mb ?? p.MB ?? 0) || 0,
+    started: p.started == null || p.started === '' || !Number.isFinite(Number(p.started)) ? null : Number(p.started),
   })).filter((p) => Number.isInteger(p.pid) && p.pid > 0);
   let commit = null;
   if (raw.commit && raw.commit.limitBytes) commit = { usedBytes: Number(raw.commit.usedBytes), limitBytes: Number(raw.commit.limitBytes), pct: (Number(raw.commit.usedBytes) / Number(raw.commit.limitBytes)) * 100, source: raw.commit.source || 'snapshot' };
@@ -175,7 +176,7 @@ public static class AcFg { [DllImport("user32.dll")] public static extern IntPtr
   [void][AcFg]::GetWindowThreadProcessId([AcFg]::GetForegroundWindow(), [ref]$fgPid)
 } catch { $fgPid = 0 }
 $os = Get-CimInstance Win32_OperatingSystem
-$procs = @(Get-CimInstance Win32_Process | Select-Object @{n='pid';e={$_.ProcessId}}, @{n='ppid';e={$_.ParentProcessId}}, @{n='name';e={$_.Name}}, @{n='path';e={$_.ExecutablePath}}, @{n='commandLine';e={$_.CommandLine}}, @{n='mb';e={[int]($_.PrivatePageCount/1MB)}})
+$procs = @(Get-CimInstance Win32_Process | Select-Object @{n='pid';e={$_.ProcessId}}, @{n='ppid';e={$_.ParentProcessId}}, @{n='name';e={$_.Name}}, @{n='path';e={$_.ExecutablePath}}, @{n='commandLine';e={$_.CommandLine}}, @{n='mb';e={[int]($_.PrivatePageCount/1MB)}}, @{n='started';e={if ($_.CreationDate) { [long]($_.CreationDate.ToUniversalTime() - [datetime]'1970-01-01').TotalMilliseconds } else { $null }}})
 [pscustomobject]@{ fgPid = $fgPid; totalKB = $os.TotalVirtualMemorySize; freeKB = $os.FreeVirtualMemory; procs = $procs } | ConvertTo-Json -Depth 4 -Compress
 `;
 
@@ -205,13 +206,15 @@ function snapshotLinux() {
     if (!/^\d+$/.test(d)) continue;
     try {
       const stat = readFileSync(`/proc/${d}/stat`, 'utf8');
-      const ppid = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]);
+      const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+      const ppid = Number(fields[1]);
+      const started = Number(fields[19]); // starttime, clock ticks since boot (field 22)
       const name = readFileSync(`/proc/${d}/comm`, 'utf8').trim();
       let path = '';
       try { path = readlinkSync(`/proc/${d}/exe`); } catch { /* another user's process */ }
       const commandLine = readFileSync(`/proc/${d}/cmdline`, 'utf8').split('\0').filter(Boolean).join(' ');
       const rss = /VmRSS:\s+(\d+)/.exec(readFileSync(`/proc/${d}/status`, 'utf8'));
-      procs.push({ pid: Number(d), ppid, name: path ? basename(path) : name, path, commandLine, mb: rss ? Math.round(Number(rss[1]) / 1024) : 0 });
+      procs.push({ pid: Number(d), ppid, name: path ? basename(path) : name, path, commandLine, mb: rss ? Math.round(Number(rss[1]) / 1024) : 0, started: Number.isFinite(started) ? started : null });
     } catch { /* exited while we read */ }
   }
   return { fgPid: null, fgKnown: false, procs, commit: linuxCommit() };
@@ -332,7 +335,15 @@ function identityNow(pid, platform = process.platform) {
 export function treeOf(pids, s, prot = new Set()) {
   const all = pids.filter((p) => !prot.has(p));
   if (!s) return all;
-  for (let i = 0; i < all.length; i++) for (const p of s.procs) if (p.ppid === all[i] && !all.includes(p.pid) && !prot.has(p.pid)) all.push(p.pid);
+  const byPid = new Map(s.procs.map((p) => [p.pid, p]));
+  // A child is always created after its parent. A process older than the PID it names as parent has a reused
+  // ParentProcessId (Windows keeps the number after the parent exits), so it is not part of this tree.
+  const olderThanParent = (p, parent) => p.started != null && parent?.started != null && p.started < parent.started;
+  for (let i = 0; i < all.length; i++) {
+    for (const p of s.procs) {
+      if (p.ppid === all[i] && !all.includes(p.pid) && !prot.has(p.pid) && !olderThanParent(p, byPid.get(all[i]))) all.push(p.pid);
+    }
+  }
   return all;
 }
 
@@ -473,7 +484,8 @@ export function once(o, cfg, env = process.env, deps = {}) {
     rows,
   };
   const refused = rows.some((r) => /REFUSED/.test(r.verdict));
-  return { out, code: refused ? 4 : keptByGate ? 3 : 0, state: st };
+  const skipped = rows.some((r) => /^SKIPPED/.test(r.verdict));
+  return { out, code: refused ? 4 : skipped ? 1 : keptByGate ? 3 : 0, state: st };
 }
 
 function explain(out) {
