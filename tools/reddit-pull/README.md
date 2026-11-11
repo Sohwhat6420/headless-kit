@@ -1,13 +1,31 @@
 # reddit-pull
 
-![status: prototype, feedback welcome](https://img.shields.io/badge/status-prototype%2C%20feedback%20welcome-orange)
+[![test](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml/badge.svg)](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml)
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)
 ![node: 18+](https://img.shields.io/badge/node-18%2B-green)
 ![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-A single-file, zero-dependency Node CLI that pulls **public Reddit posts and comments** from the [Arctic Shift](https://github.com/ArthurHeitmann/arctic_shift) archive, with no browser, no sign-in and no Reddit API key. It filters locally and prints **one JSON line** saying what it wrote, so a script or an AI agent can check the result without parsing prose.
+**Pull public Reddit posts and comments as JSON files, with no browser, no sign-in and no API key.** One Node file, zero dependencies.
 
-It is part of **headless-kit** (see the repository root): no window, nothing that auto-starts, output as files plus a JSON line, standard library only.
+**Why it's interesting:** Reddit answers `403` to plain HTTP clients, most AI agents' browsers refuse the domain, and the official API needs an app registration. `reddit-pull` reads the volunteer-run [Arctic Shift](https://github.com/ArthurHeitmann/arctic_shift) archive instead, pages through a date window politely (it waits out `429`s), filters locally, and prints **one JSON line** saying what it wrote, so a script or an agent can check the result without parsing prose.
+
+<p align="center"><img src="docs/demo.svg" alt="Terminal: pulling every r/rust post and comment since 1 November, about 3,100 items in 176 seconds, 55 posts and 69 comments matched the filter, then the first three lines of the titles file" width="100%"></p>
+
+### Quick start (Node 18+, nothing to install)
+
+```bash
+git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/reddit-pull
+node reddit-pull.mjs --sub LocalLLaMA --after 2026-11-01 --grep "claude|agent" --out ./out
+node --test   # 8 offline tests against a local mock of the API
+```
+
+<details>
+<summary><b>The offline test suite, real output</b></summary>
+<br>
+<img src="docs/test-run.svg" alt="8 of 8 tests pass: argument parsing, tree flattening, paging and filtering, waiting out a 429, failure as JSON with exit 1, usage errors, thread mode" width="80%">
+</details>
+
+It is part of **[headless-kit](../../README.md)**, a set of small, agent-first, windowless tools: no window, nothing that auto-starts, output as files plus a JSON line, standard library only.
 
 ## The problem
 
@@ -63,12 +81,13 @@ node --test
 
 ## Measured
 
-Live run, 7 Nov 2026, one laptop, home broadband:
+Live runs, one laptop, home broadband:
 
 | Run | Result |
 | --- | --- |
-| `--sub hackios --comments --max-pages 200` | **390 posts and 3,385 comments in 68 s**, 0 failed requests, 0 duplicate ids |
+| 7 Nov: `--sub hackios --comments --max-pages 200` | **390 posts and 3,385 comments in 68 s**, 0 failed requests, 0 duplicate ids |
 | Same, with the default `--max-pages 30` | 390 posts, comments stop at exactly 3,000 (the page cap), 67 s. The cap is a limit you set, not the archive's. |
+| 11 Nov: `--sub rust --after 2026-11-01 --comments --grep "windows\|wasm"` (the demo above) | about 3,100 posts and comments scanned in 176 s, 55 posts and 69 comments kept, 0 failed requests. Slower than the 7 Nov run for a similar item count; the cause wasn't measured. |
 | First measurement, 2 Nov 2026 | r/hackios in full: 262 posts, 1,842 comments, under 5 minutes |
 | Offline tests | 8 / 8 pass (arguments, tree flattening, paging, filtering, a 429 wait, failure reporting, usage errors) |
 
@@ -101,7 +120,7 @@ This tool is a thin client for a **free, volunteer-run service**. Be a good gues
 
 ## History
 
-Imported into headless-kit with its full history (first commit 2 Nov 2026). Since then it was reshaped into an importable module with tests, JSON-line output, 429 handling and de-duplication; see [docs/HISTORY.md](docs/HISTORY.md).
+Extracted from the monorepo it was first written in, with its own commit and real date (2 Nov 2026). Since then it was reshaped into an importable module with tests, JSON-line output, 429 handling and de-duplication; see [docs/HISTORY.md](docs/HISTORY.md).
 
 ## Licence
 

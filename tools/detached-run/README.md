@@ -1,20 +1,34 @@
 # detached-run
 
-![status: prototype, feedback welcome](https://img.shields.io/badge/status-prototype%2C%20feedback%20welcome-orange)
+[![test](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml/badge.svg)](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml)
 ![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)
-![platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4)
+![platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078d4)
+![node: 18+](https://img.shields.io/badge/node-18%2B-green)
 ![dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
 
-Start a long-running Windows process that **outlives whatever started it** and **never opens a window**. One Node file, no dependencies.
+**Start a Windows background process that outlives whatever started it, and never flashes a window.** One Node file, no dependencies.
+
+**Why it's interesting:** Windows has no clean "nohup". A child process dies with its parent app, and if that app is MSIX-packaged (as many modern desktop apps are) the child also inherits the package's *virtualised* file system and registry, so anything it "installs" silently vanishes. `detached-run` side-steps both by asking **WMI** to create the process, so its parent is `WmiPrvSE.exe`, not you. A test suite then *proves* zero windows appear, using a 50 ms window watcher with a positive control.
+
+<p align="center"><img src="docs/demo.svg" alt="Terminal: start a ticker job, status says alive, its log shows ticks, stop it, status says dead with exit code 3" width="100%"></p>
+
+### Quick start (Windows 11, Node 18+)
 
 ```bash
-node detached-run.mjs start myjob -- node server.js
-node detached-run.mjs status myjob      # exit 0 alive, 3 dead, 2 unknown
-node detached-run.mjs stop myjob        # kills the recorded PID and its tree, never "by name"
-node detached-run.mjs list
+git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/detached-run
+node detached-run.mjs start myjob -- node -e "setInterval(()=>console.log(Date.now()),1000)"
+node detached-run.mjs status myjob   # exit 0 alive · 3 dead · 2 unknown;   stop: node detached-run.mjs stop myjob
 ```
 
-It is part of **headless-kit** (see the repository root); sibling tool: [reddit-pull](../reddit-pull).
+`node examples/demo.mjs` replays the run above in a temporary folder; `node test/detached-run.test.mjs` runs the 17-check suite (about 17 s):
+
+<details>
+<summary><b>The zero-window test suite, real output</b></summary>
+<br>
+<img src="docs/test-run.svg" alt="17 checks pass: positive control sees a test window; both supervisors are parented to WmiPrvSE.exe; 0 new visible windows at any 50 ms poll" width="100%">
+</details>
+
+It is part of **[headless-kit](../../README.md)**, a set of small, windowless, agent-first tools.
 
 ## The problem
 
@@ -67,7 +81,7 @@ Windows 11 (build 26200), Node 22, 7 Nov 2026:
 | Recycled PID (creation time mismatch) | reads dead |
 | Whole suite | 17 checks, all pass |
 
-Only Windows 11 on one machine so far.
+Only Windows 11 on one machine so far, re-run on 11 Nov 2026 (all 17 pass in 16.5 s) and on every push in GitHub Actions on Windows Server (`windows-latest`, passing).
 
 ## Limits
 

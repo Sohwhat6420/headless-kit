@@ -1,6 +1,6 @@
 # Contributing to reddit-pull
 
-This is a prototype and feedback is the most useful thing you can give it. Small, concrete contributions are welcome.
+A small, working tool. Feedback is the most useful thing you can give it, and small, concrete contributions are welcome.
 
 ## Ways to help
 - **Report a result.** Tried it on a different device, OS version or setup? Open an issue with what you ran and what you saw, even if it worked.
