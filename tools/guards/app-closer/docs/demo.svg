@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="654" viewBox="0 0 880 654" role="img" aria-label="app-closer: close idle apps when memory is tight">
-<rect x="0.5" y="0.5" width="879" height="653" rx="10" fill="#0d1117" stroke="#30363d"/>
-<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="614" viewBox="0 0 981 614" role="img" aria-label="app-closer: close idle apps when memory is tight">
+<rect x="0.5" y="0.5" width="980" height="613" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
 <circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
-<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">app-closer: close idle apps when memory is tight</text>
+<text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">app-closer: close idle apps when memory is tight</text>
 <g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
 <text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># APP_CLOSER_CONFIG=examples/config.example.json (six placeholder app rules)</tspan></text>
 <text x="20" y="86" xml:space="preserve"><tspan fill="#7d8590"># a recorded process list: 88% committed, a terminal in front; kills against it are simulated</tspan></text>
@@ -10,28 +10,26 @@
 <text x="20" y="126" xml:space="preserve">memory 88% committed · report (simulated) · closes at 80%</text>
 <text x="20" y="146" xml:space="preserve">  kept                     Chat client          ~  410 MB  idle for 0.0 min; closes after 5</text>
 <text x="20" y="166" xml:space="preserve">  kept                     Game launcher        ~  400 MB  a game from its library is running</text>
-<text x="20" y="186" xml:space="preserve">  kept                     Container desktop    ~  700 MB  busy check could not run (ENOENT); kept t</text>
-<text x="20" y="206" xml:space="preserve">  o be safe</text>
-<text x="20" y="226" xml:space="preserve">  closable                 Orphaned dev server  ~   95 MB  nothing keeps it open</text>
-<text x="20" y="246" xml:space="preserve">  closable                 Notes app (desktop)  ~  320 MB  nothing keeps it open</text>
-<text x="20" y="266" xml:space="preserve">  closable                 Media player         ~  230 MB  nothing keeps it open</text>
-<text x="20" y="286" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
-<text x="20" y="306" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node app-closer.mjs --snapshot examples/snapshot.example.json --close --explain</tspan></text>
-<text x="20" y="326" xml:space="preserve">memory 88% committed · close (simulated) · closes at 80%</text>
-<text x="20" y="346" xml:space="preserve">  kept                     Chat client          ~  410 MB  idle for 0.0 min; closes after 5</text>
-<text x="20" y="366" xml:space="preserve">  kept                     Game launcher        ~  400 MB  a game from its library is running</text>
-<text x="20" y="386" xml:space="preserve">  kept                     Container desktop    ~  700 MB  busy check could not run (ENOENT); kept t</text>
-<text x="20" y="406" xml:space="preserve">  o be safe</text>
-<text x="20" y="426" xml:space="preserve">  CLOSED                   Orphaned dev server  ~   95 MB  nothing keeps it open</text>
-<text x="20" y="446" xml:space="preserve">  CLOSED                   Notes app (desktop)  ~  320 MB  nothing keeps it open</text>
-<text x="20" y="466" xml:space="preserve">  CLOSED                   Media player         ~  230 MB  nothing keeps it open</text>
-<text x="20" y="486" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
-<text x="20" y="506" xml:space="preserve"><tspan fill="#7d8590"># not shown, never stopped: System and explorer.exe (protected), notes-app started from pwsh (unless</tspan></text>
-<text x="20" y="526" xml:space="preserve">  Parent)</text>
-<text x="20" y="546" xml:space="preserve"><tspan fill="#7d8590"># stdout is one JSON object per check, for the agent:</tspan></text>
-<text x="20" y="566" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node app-closer.mjs --snapshot examples/snapshot.example.json</tspan></text>
-<text x="20" y="586" xml:space="preserve">{"at":"2026-11-11T06:11:11.367Z","mode":"report","simulated":true,"memory":{"pct":88,"usedBytes":nul</text>
-<text x="20" y="606" xml:space="preserve">  l,"limitBytes":null,"source":"snapshot"},"gate":{"closeAtPct":80,"open":true,"ignoreMemory…</text>
-<text x="20" y="626" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="186" xml:space="preserve">  kept                     Container desktop    ~  700 MB  containers are running</text>
+<text x="20" y="206" xml:space="preserve">  closable                 Orphaned dev server  ~   95 MB  nothing keeps it open</text>
+<text x="20" y="226" xml:space="preserve">  closable                 Notes app (desktop)  ~  320 MB  nothing keeps it open</text>
+<text x="20" y="246" xml:space="preserve">  closable                 Media player         ~  230 MB  nothing keeps it open</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node app-closer.mjs --snapshot examples/snapshot.example.json --close --explain</tspan></text>
+<text x="20" y="306" xml:space="preserve">memory 88% committed · close (simulated) · closes at 80%</text>
+<text x="20" y="326" xml:space="preserve">  kept                     Chat client          ~  410 MB  idle for 0.0 min; closes after 5</text>
+<text x="20" y="346" xml:space="preserve">  kept                     Game launcher        ~  400 MB  a game from its library is running</text>
+<text x="20" y="366" xml:space="preserve">  kept                     Container desktop    ~  700 MB  containers are running</text>
+<text x="20" y="386" xml:space="preserve">  CLOSED                   Orphaned dev server  ~   95 MB  nothing keeps it open</text>
+<text x="20" y="406" xml:space="preserve">  CLOSED                   Notes app (desktop)  ~  320 MB  nothing keeps it open</text>
+<text x="20" y="426" xml:space="preserve">  CLOSED                   Media player         ~  230 MB  nothing keeps it open</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#7d8590"># not shown, never stopped: System and explorer.exe (protected), notes-app started from pwsh (unlessParent)</tspan></text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#7d8590"># a real --close looks again right before each stop: a PID that exited or now names another process is skipped</tspan></text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#7d8590"># stdout is one JSON object per check, for the agent:</tspan></text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node app-closer.mjs --snapshot examples/snapshot.example.json</tspan></text>
+<text x="20" y="546" xml:space="preserve">{"at":"2026-11-11T08:01:18.205Z","mode":"report","simulated":true,"memory":{"pct":88,"usedBytes":null,"limitByte</text>
+<text x="20" y="566" xml:space="preserve">  s":null,"source":"snapshot"},"gate":{"closeAtPct":80,"open":true,"ignoreMemory…</text>
+<text x="20" y="586" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
 </g>
 </svg>

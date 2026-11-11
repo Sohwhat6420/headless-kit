@@ -1,7 +1,8 @@
 {
-  "$comment": "A recorded process list for demos and tests (--snapshot): with it, app-closer reads no real processes and only simulates kills. commitPct (or commit: {usedBytes, limitBytes}) is the memory reading; fgPid is the process whose window is in front.",
+  "$comment": "A recorded process list for demos and tests (--snapshot): with it, app-closer reads no real processes, runs no busy-check command and only simulates kills. commitPct (or commit: {usedBytes, limitBytes}) is the memory reading; fgPid is the process whose window is in front; busy records each busy check's answer by app name (an app with a busyCheck and no answer here is kept).",
   "commitPct": 88,
   "fgPid": 10,
+  "busy": { "Container desktop": true },
   "procs": [
     { "pid": 4, "ppid": 0, "name": "System", "path": "", "commandLine": "", "mb": 0 },
     { "pid": 50, "ppid": 1, "name": "explorer.exe", "path": "C:/Windows/explorer.exe", "commandLine": "explorer.exe", "mb": 120 },

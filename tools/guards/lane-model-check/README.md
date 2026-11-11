@@ -16,13 +16,13 @@
 ```bash
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/guards/lane-model-check
 node lane-model-check.mjs --transcript examples/transcript.example.jsonl --expect model-small --explain
-node --test   # 11 offline tests, about 2 s
+node --test   # 13 offline tests, about 2 s (one is skipped on Windows)
 ```
 
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="11 of 11 tests pass: prefix matching with a separator, first turn decides, mismatch, --all, pending, torn last lines, session lookup with path-trick rejection, plan lookup, other formats by config, bad usage" width="100%">
+<img src="docs/test-run.svg" alt="12 tests pass and one is skipped on Windows (chmod cannot lock a file there): prefix matching with a separator, first turn decides, mismatch, --all, pending, torn last lines, session lookup with path-trick rejection, plan lookup, other formats by config, bad usage, an unreadable transcript" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -87,7 +87,7 @@ Another agent's format is a config change. For lines like `{"kind":"response","m
 | 0 | `match` | The model matches. |
 | 1 | `mismatch` | Another model served the turn (with `--all`: at least one turn). |
 | 3 | `pending` | No transcript yet, or no model turn in it yet. Poll again. |
-| 2 | `error` | Bad usage, a bad config or plan, or a lane with no model in the plan. |
+| 2 | `error` | Bad usage, a bad config or plan, a lane with no model in the plan, or a transcript that exists but cannot be read (`EACCES` and the like). Never 1: an error is not a mismatch. |
 
 ## Security
 
@@ -98,7 +98,7 @@ Another agent's format is a config change. For lines like `{"kind":"response","m
 
 ## Status
 
-Tested (offline, 11 `node:test` cases on fixture transcripts, about 2 s on Windows 11 with Node 22): matching rules, first-turn and `--all` modes, pending states, a torn last line, session lookup (and its path-trick refusals), plan lookup in arrays and keyed objects, a non-Claude format through config, and bad usage.
+Tested (offline, 13 `node:test` cases on fixture transcripts, about 2 s on Windows 11 with Node 22): matching rules, first-turn and `--all` modes, pending states, a torn last line, session lookup (and its path-trick refusals), plan lookup in arrays and keyed objects, a non-Claude format through config, bad usage, and an unreadable transcript exiting 2 (skipped on Windows, where `chmod` cannot lock a file, and as root; the Linux CI runner covers it).
 
 Not tested: real transcripts of agents other than Claude Code (only the config mechanism, on a made-up format), and transcripts in which the model field moves between versions of an agent CLI. If your agent's format changes, the check reports `pending` (no model turn found) rather than a false match.
 
