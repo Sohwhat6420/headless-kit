@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ig2md post",
+  "type": "object",
+  "required": ["schema_version", "url", "shortcode", "kind", "author", "hashtags", "media", "screenshots", "fetched_at", "access", "sources", "transcript"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "url": { "type": "string" },
+    "shortcode": { "type": "string" },
+    "kind": { "enum": ["reel", "post", "carousel", "story", "highlight"] },
+    "author": {
+      "type": "object",
+      "required": ["username"],
+      "properties": {
+        "username": { "type": "string" },
+        "full_name": { "type": ["string", "null"] },
+        "verified": { "type": ["boolean", "null"] }
+      }
+    },
+    "date": { "type": ["string", "null"] },
+    "caption": { "type": ["string", "null"] },
+    "hashtags": { "type": "array", "items": { "type": "string" } },
+    "mentions": { "type": "array", "items": { "type": "string" } },
+    "location": { "type": ["string", "null"] },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "likes": { "type": ["integer", "null"] },
+        "comments": { "type": ["integer", "null"] },
+        "views": { "type": ["integer", "null"] }
+      }
+    },
+    "media": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "enum": ["image", "video"] },
+          "file": { "type": ["string", "null"] },
+          "width": { "type": ["integer", "null"] },
+          "height": { "type": ["integer", "null"] },
+          "duration_s": { "type": ["number", "null"] },
+          "alt_text": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "screenshots": {
+      "type": "object",
+      "properties": {
+        "cover": { "type": ["string", "null"] },
+        "contact_sheet": { "type": ["string", "null"] },
+        "embed_page": { "type": ["string", "null"] }
+      }
+    },
+    "transcript": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pending", "done", "unsupported", "none"] },
+        "engine": { "type": ["string", "null"] },
+        "language": { "type": ["string", "null"] },
+        "text": { "type": ["string", "null"] }
+      }
+    },
+    "comments": { "type": "array", "items": { "type": "object" } },
+    "fetched_at": { "type": "string" },
+    "access": { "enum": ["anonymous", "user-file"] },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "ok"],
+        "properties": {
+          "name": { "enum": ["yt-dlp", "gallery-dl", "embed", "instaloader", "from-file"] },
+          "ok": { "type": "boolean" },
+          "error": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

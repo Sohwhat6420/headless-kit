@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="714" viewBox="0 0 880 714" role="img" aria-label="ig2md: node --test">
+<rect x="0.5" y="0.5" width="879" height="713" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">ig2md: node --test</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 1 - parser: 12 URL shapes, tracking parameters dropped, non-Instagram refused</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 2 - list file: comments, blanks, duplicates</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 3 - hashtags and mentions</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 4 - mappers: yt-dlp, gallery-dl, embed page, instaloader</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 5 - merge: first source with a field wins, provenance kept, kind refined, schema valid</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 6 - schema validation rejects bad output, including a cookie-based access mode</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 7 - Markdown: front matter, caption, metrics, and an untrusted-data banner</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 8 - redaction strips cookie values; error classes, including the ambiguous yt-dlp message</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 9 - chromiumPath: installed Chrome or Edge and non-Playwright paths refused; a bundled path accep</text>
+<text x="20" y="266" xml:space="preserve">  ted</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 10 - request gate: hard cap, and a pause between calls but not before the first</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 11 - arguments and config: unknown flags and keys refused (no --cookies, no cookiesFile)</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 12 - end to end with fake yt-dlp and ffmpeg: JSON + Markdown written and valid, logged-out flags </text>
+<text x="20" y="346" xml:space="preserve">  passed</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 13 - a missing tool is skipped and recorded; the next source fills in (gallery-dl carousel of one</text>
+<text x="20" y="386" xml:space="preserve">  )</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 14 - nothing installed: exit 1 with no network request</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 15 - instaloader source: anonymous, no login flags, carousel kind from yt-dlp carousel</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 16 - embed page by plain HTTP (no playwright): parsed; 429 stops with exit 4; 404 is exit 1</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 17 - embed page with playwright: headless, fresh context, no channel, no profile, screenshot save</text>
+<text x="20" y="486" xml:space="preserve">  d</text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 18 - no request is spent on the embed page "for the screenshot" when no screenshot is possible</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 19 - login wall: exit 3, no retry, no workaround</text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 20 - stories: unsupported (exit 3, no request); --from-file files media you already have</text>
+<text x="20" y="566" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">ok</tspan> 21 - CLI: --help 0, usage errors 2 as JSON, --check, a batch stops on 429, no cookie strings writ</text>
+<text x="20" y="586" xml:space="preserve">  ten</text>
+<text x="20" y="606" xml:space="preserve"><tspan fill="#7d8590"># tests 21</tspan></text>
+<text x="20" y="626" xml:space="preserve"><tspan fill="#7d8590"># pass 21</tspan></text>
+<text x="20" y="646" xml:space="preserve"><tspan fill="#7d8590"># fail 0</tspan></text>
+<text x="20" y="666" xml:space="preserve"><tspan fill="#7d8590"># duration_ms 2450.3476</tspan></text>
+<text x="20" y="686" xml:space="preserve"><tspan fill="#7d8590"># offline: fixtures and stand-ins only, no network, no browser</tspan></text>
+</g>
+</svg>

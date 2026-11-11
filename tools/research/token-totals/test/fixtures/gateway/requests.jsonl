@@ -1,0 +1,5 @@
+{"ts":1793613600,"request_id":"g-1","model":"example-model-large","usage":{"prompt_tokens":1000,"completion_tokens":250,"cached_tokens":400}}
+{"ts":1793613600,"request_id":"g-1","model":"example-model-large","usage":{"prompt_tokens":1000,"completion_tokens":250,"cached_tokens":400}}
+{"ts":1793667600,"request_id":"g-2","model":"example-model-small","usage":{"prompt_tokens":100,"completion_tokens":50}}
+{"ts":"not a time","request_id":"g-3","model":"example-model-small","usage":{"prompt_tokens":1,"completion_tokens":1}}
+{"event":"heartbeat","ts":1793667601}

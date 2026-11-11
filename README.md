@@ -42,6 +42,8 @@ The Claude Code hooks and skills install as a plugin, in Claude Code:
 | Machine guards | [bin-dump](tools/guards/bin-dump) | Moves files into a dated rubbish bin with a manifest (why, who) instead of deleting them; `--restore` puts them back. | Node 18+, any OS |
 | Machine guards | [lane-model-check](tools/guards/lane-model-check) | Checks that a background agent run used the model it was asked for, from its JSONL transcript (Claude Code's format by default). | Node 18+, any OS |
 | Phone + research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
+| Phone + research | [ig2md](tools/research/ig2md) | Turns a public Instagram post, reel or carousel into schema-versioned JSON + Markdown (and frames) by running yt-dlp, gallery-dl and the public embed page. Logged-out only, rate-limited. | Node 18+, any OS; optional yt-dlp / gallery-dl / ffmpeg |
+| Phone + research | [token-totals](tools/research/token-totals) | Totals the tokens in Claude Code session logs, deduplicated, per day and per model; optional ledger that never lowers a recorded day. Read-only on every log. | Node 18+, any OS |
 
 ## See them run
 

@@ -1,0 +1,14 @@
+{
+  "$comment": "Every key is optional. Delays are milliseconds between requests (one at a time); maxRequests is a hard cap per run. A tool may be a command or an array such as [\"python\", \"-m\", \"yt_dlp\"]; a missing one is skipped. chromiumPath may only name a Playwright-bundled browser (inside an ms-playwright folder), never an installed Chrome or Edge.",
+  "outDir": "./ig2md-out",
+  "minDelayMs": 2000,
+  "maxDelayMs": 9000,
+  "maxRequests": 50,
+  "sources": ["yt-dlp", "gallery-dl", "embed", "instaloader"],
+  "downloadMedia": true,
+  "screenshot": true,
+  "tools": { "ytdlp": "yt-dlp", "gallerydl": "gallery-dl", "ffmpeg": "ffmpeg", "instaloader": "instaloader" },
+  "playwrightModule": null,
+  "chromiumPath": null,
+  "skipIfFresherThanHours": 0
+}

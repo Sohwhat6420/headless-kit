@@ -1,0 +1,13 @@
+{
+  "name": "token-totals",
+  "version": "0.1.0",
+  "description": "Total the tokens in Claude Code session logs, deduplicated by message id + request id: input, output, cache write and cache read, per day and per model, with an optional never-lowered daily ledger. Read-only. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "token-totals": "./token-totals.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/research/token-totals" },
+  "keywords": ["claude-code", "tokens", "usage", "jsonl", "ledger", "agents", "cli", "headless"]
+}

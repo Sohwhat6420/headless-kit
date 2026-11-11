@@ -1,0 +1,13 @@
+{
+  "name": "ig2md",
+  "version": "0.1.0",
+  "description": "A public Instagram post, reel or carousel URL to schema-versioned JSON + Markdown + frames, for an agent to read. Runs yt-dlp, gallery-dl, the public embed page and instaloader if installed. Logged-out only, rate-limited. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "ig2md": "./ig2md.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/research/ig2md" },
+  "keywords": ["instagram", "yt-dlp", "gallery-dl", "instaloader", "markdown", "json-schema", "agents", "cli", "headless"]
+}

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="794" viewBox="0 0 880 794" role="img" aria-label="token-totals: deduplicated Claude Code tokens per day and model">
+<rect x="0.5" y="0.5" width="879" height="793" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h859a10 10 0 0 1 10 10v22h-879v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="440" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">token-totals: deduplicated Claude Code tokens per day and model</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#7d8590"># fixture transcripts only (test/fixtures/projects): 3 logs, a streamed reply logged twice, a resume</tspan></text>
+<text x="20" y="86" xml:space="preserve">  d-session copy</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node token-totals.mjs --root logs --table --ledger tokens.jsonl</tspan></text>
+<text x="20" y="126" xml:space="preserve">day         input  output  cache write  cache read  total  replies</text>
+<text x="20" y="146" xml:space="preserve">2026-11-01     15     300         1.0K       13.0K  14.3K        2</text>
+<text x="20" y="166" xml:space="preserve">2026-11-02     20     300         2.0K       10.0K  12.3K        1</text>
+<text x="20" y="186" xml:space="preserve">2026-11-03     50     400          500        3.0K   4.0K        1</text>
+<text x="20" y="206" xml:space="preserve">----------  -----  ------  -----------  ----------  -----  -------</text>
+<text x="20" y="226" xml:space="preserve">all            85    1.0K         3.5K       26.0K  30.6K        4</text>
+<text x="20" y="246" xml:space="preserve"></text>
+<text x="20" y="266" xml:space="preserve">claude-sonnet-4-5     18.5K  2 replies</text>
+<text x="20" y="286" xml:space="preserve">claude-opus-4-1        8.1K  1 reply</text>
+<text x="20" y="306" xml:space="preserve">claude-haiku-4-5       4.0K  1 reply</text>
+<text x="20" y="326" xml:space="preserve"></text>
+<text x="20" y="346" xml:space="preserve">3 files, 2 duplicate lines skipped</text>
+<text x="20" y="366" xml:space="preserve">ledger +3 new, 0 raised, 0 kept; 3 days, 30.6K recorded</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#7d8590"># later: Claude Code has pruned the subagent log. The ledger keeps the day it recorded.</tspan></text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node token-totals.mjs --root logs-later --table --ledger tokens.jsonl</tspan></text>
+<text x="20" y="446" xml:space="preserve">day         input  output  cache write  cache read  total  replies</text>
+<text x="20" y="466" xml:space="preserve">2026-11-01     15     300         1.0K       13.0K  14.3K        2</text>
+<text x="20" y="486" xml:space="preserve">2026-11-02     20     300         2.0K       10.0K  12.3K        1</text>
+<text x="20" y="506" xml:space="preserve">----------  -----  ------  -----------  ----------  -----  -------</text>
+<text x="20" y="526" xml:space="preserve">all            35     600         3.0K       23.0K  26.6K        3</text>
+<text x="20" y="546" xml:space="preserve"></text>
+<text x="20" y="566" xml:space="preserve">claude-sonnet-4-5     18.5K  2 replies</text>
+<text x="20" y="586" xml:space="preserve">claude-opus-4-1        8.1K  1 reply</text>
+<text x="20" y="606" xml:space="preserve"></text>
+<text x="20" y="626" xml:space="preserve">2 files, 2 duplicate lines skipped</text>
+<text x="20" y="646" xml:space="preserve">ledger +0 new, 0 raised, 2 kept; 3 days, 30.6K recorded</text>
+<text x="20" y="666" xml:space="preserve"><tspan fill="#7d8590"># exit 0</tspan></text>
+<text x="20" y="686" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node token-totals.mjs --root logs --by month | cut -c1-240</tspan></text>
+<text x="20" y="706" xml:space="preserve">{"ok":true,"generated":"2026-11-11T07:16:07.994Z","tz":"utc","since":null,"until":null,"convention":</text>
+<text x="20" y="726" xml:space="preserve">  "input + output + cache_write + cache_read; deduplicated by id","sources":[{"name":"claude-code","ro</text>
+<text x="20" y="746" xml:space="preserve">  ots":["logs"],"files":3,"replies":4,"dup</text>
+<text x="20" y="766" xml:space="preserve"><tspan fill="#7d8590"># one JSON object on stdout; logs are only ever read</tspan></text>
+</g>
+</svg>

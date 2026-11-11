@@ -1,0 +1,24 @@
+{
+  "$comment": "Every key is optional. roots: Claude Code transcript folders (default: $CLAUDE_CONFIG_DIR/projects or ~/.claude/projects). sources: other JSONL logs, each with a field map of dotted paths; timestamp may be ISO text or epoch seconds/ms; id is one path or a list joined into the dedup key. ledger and archive must be outside every log folder.",
+  "roots": ["/path/to/.claude/projects"],
+  "claudeCode": true,
+  "tz": "utc",
+  "by": "day",
+  "ledger": "/path/to/token-ledger.jsonl",
+  "archive": null,
+  "sources": [
+    {
+      "name": "my-gateway",
+      "root": "/path/to/gateway-logs",
+      "ext": ".jsonl",
+      "fields": {
+        "timestamp": "ts",
+        "id": "request_id",
+        "model": "model",
+        "input": "usage.prompt_tokens",
+        "output": "usage.completion_tokens",
+        "cache_read": "usage.cached_tokens"
+      }
+    }
+  ]
+}
