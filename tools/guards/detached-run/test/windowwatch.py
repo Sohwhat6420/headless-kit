@@ -34,6 +34,7 @@ def snapshot():
 secs = float(sys.argv[1])
 stop = sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "--stop-file" else None
 base = set(snapshot())
+print("READY baseline=%d" % len(base), flush=True)  # the test waits for this before acting
 seen = {}
 t0 = time.monotonic()
 while time.monotonic() - t0 < secs and not (stop and os.path.exists(stop)):

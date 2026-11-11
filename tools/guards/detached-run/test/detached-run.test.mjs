@@ -23,6 +23,12 @@ const env = { ...process.env, DETACHED_RUN_DIR: dir };
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 let fails = 0;
 const check = (ok, what, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${what}${extra ? '  ' + extra : ''}`); if (!ok) fails++; };
+// windowwatch prints READY once its baseline is taken. Wait for it on the event loop (a blocking sleep would
+// starve the stdout listener), so slow runners don't create the test window before the baseline exists.
+const waitReady = (getOut, ms = 20000) => new Promise((resolve) => {
+  const t0 = Date.now();
+  const tick = setInterval(() => { if (getOut().includes('READY') || Date.now() - t0 > ms) { clearInterval(tick); resolve(); } }, 25);
+});
 
 const dr = (...args) => spawnSync(process.execPath, [DR, ...args], { encoding: 'utf8', windowsHide: true, env, timeout: 90000 });
 const ps = (cmd) => (spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', cmd], { encoding: 'utf8', windowsHide: true }).stdout || '').trim();
@@ -35,16 +41,18 @@ const visibleCount = () => Number((spawnSync('python', ['-c', [
 // Positive control: windowwatch must SEE a window, or a 0 below proves nothing. A 1x1 tool window
 // far off-screen, no activation, for 0.6 s: visible to EnumWindows, invisible to the user.
 {
-  const ctl = spawn('python', [WATCH, '4'], { windowsHide: true });
+  const ctlStop = join(dir, 'ctl.stop');
+  const ctl = spawn('python', [WATCH, '25', '--stop-file', ctlStop], { windowsHide: true });
   let out = '';
   ctl.stdout.on('data', (d) => { out += d; });
   const done = new Promise((r) => ctl.on('exit', r));
-  sleep(1200);
+  await waitReady(() => out);
   spawnSync('python', ['-c', [
     'import ctypes, time', 'u=ctypes.WinDLL("user32")',
     'u.CreateWindowExW.restype=ctypes.c_void_p',
     'h=u.CreateWindowExW(0x08000080,"STATIC","dr-ctl",0x90000000,-30000,-30000,1,1,None,None,None,None)',
     'time.sleep(0.6)', 'u.DestroyWindow(ctypes.c_void_p(h))'].join('\n')], { windowsHide: true });
+  writeFileSync(ctlStop, '');
   await done;
   check(/new visible windows: [1-9]/.test(out), 'positive control: windowwatch sees an off-screen test window', out.trim().split('\n').pop());
 }
@@ -55,7 +63,7 @@ let watchOut = '';
 const watch = spawn('python', [WATCH, '120', '--stop-file', stopFile], { windowsHide: true });
 watch.stdout.on('data', (d) => { watchOut += d; });
 const watchDone = new Promise((r) => watch.on('exit', r));
-sleep(1500); // let windowwatch take its baseline
+await waitReady(() => watchOut); // let windowwatch take its baseline
 
 const targets = [
   ['t-node', [process.execPath, '-e', 'setTimeout(()=>{},60000)']],
@@ -98,7 +106,9 @@ const newLines = watchOut.split('\n').filter((l) => l.startsWith('NEW '));
 const ours = newLines.filter((l) => [...pids].some((p) => l.includes(`pid=${p} `)) || /ConsoleWindowClass|CASCADIA_HOSTING_WINDOW_CLASS|PseudoConsoleWindow/.test(l));
 console.log(watchOut.trim().split('\n').map((l) => '   watch: ' + l).join('\n'));
 check(ours.length === 0, 'no console / terminal / our-PID window appeared at any 50 ms poll', `${ours.length} of ${newLines.length} new windows`);
-check(after === before, 'EnumWindows visible count unchanged', `before=${before} after=${after}`);
+// <= not ===: on a live desktop another app may close a window meanwhile; a NEW window is what must not happen
+// (and windowwatch above already names any new window, ours or not).
+check(after <= before, 'EnumWindows visible count did not grow', `before=${before} after=${after}`);
 
 rmSync(dir, { recursive: true, force: true });
 console.log(fails ? `\n${fails} FAILED` : '\nALL PASS');
