@@ -57,6 +57,7 @@ export const DEFAULT_CONFIG = {
   skipUnattended: true, // headless and SDK runs are agents, not you
   settledPattern: String.raw`\b(?:settled|arrived|reached|i'?m (?:here|home|back|at my desk)|im (?:here|home|back)|at my desk|on my laptop|starting (?:work|now)|let'?s (?:start|begin|do (?:it|this))|arm (?:the )?focus gate)\b`,
   ignorePatterns: [], // extra regex sources: prompts that match are not yours (peer agents, bots)
+  // peerPattern: regex source for peer-agent messages (default PEER_PATTERN); "" turns it off
   rule: '', // optional: your own words, quoted back to Claude when the gate is on
   allowed: [
     'work on any item above',
@@ -120,7 +121,10 @@ function writeAtomic(file, value) {
 }
 const quietWrite = (file, value) => { try { writeAtomic(file, value); } catch { /* read-only is fine */ } };
 const ms = (v) => { const n = Date.parse(v ?? ''); return Number.isFinite(n) ? n : NaN; };
-const clip = (s, n) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+// C0/C1 controls, every format character (bidi, zero-width, the tag block), separators: never quoted into context.
+const INVISIBLE = /[\x00-\x08\x0e-\x1f\x7f-\x9f]|\p{Cf}|[\u{FE00}-\u{FE0F}\u{E0100}-\u{E01EF}]/gu;
+const clip = (s, n) => { const t = String(s ?? '').replace(INVISIBLE, '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+const safeId = (v) => String(v ?? '').replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 64);
 const iso = (t) => new Date(t).toISOString().slice(0, 16) + 'Z';
 
 export function nowMs(env = process.env) {
@@ -140,14 +144,18 @@ export function isUnattended(env = process.env) {
 const MACHINE = [
   /^\s*\[[^\]\n]{0,80}\bSYSTEM\b/i, // "[SYSTEM NOTICE] ..." style injected turns
   /<(?:cross-session-message|agent-message|task-notification|side-sessions-event|ci-monitor-event|child-session-event|webhook-payload|system-reminder)\b/i,
-  /^\s*[A-Z][A-Z0-9_-]{1,24}\s*(?:→|->)/, // "LANE-A -> ORCH: ..." peer messages
 ];
+// "LANE-A -> ORCH: ..." peer messages: an upper-case sender, an arrow, an upper-case recipient and a colon, so a
+// person typing "TODO -> fix the tests" still counts as a person.
+export const PEER_PATTERN = String.raw`^\s*[A-Z][A-Z0-9_-]{1,24}\s*(?:→|->)\s*[A-Z][A-Z0-9_-]{1,24}\s*:`;
 
 /** True when the prompt was typed by a person, not injected by an agent, a peer session or the system. */
 export function isUserPrompt(prompt, cfg = DEFAULT_CONFIG) {
   const p = String(prompt ?? '');
   if (!p.trim()) return false;
   if (MACHINE.some((re) => re.test(p))) return false;
+  const peer = cfg.peerPattern === undefined ? PEER_PATTERN : cfg.peerPattern;
+  try { if (peer && new RegExp(peer).test(p)) return false; } catch { /* a bad pattern is skipped */ }
   for (const src of cfg.ignorePatterns || []) {
     try { if (new RegExp(src, 'i').test(p)) return false; } catch { /* a bad pattern is skipped */ }
   }
@@ -171,6 +179,11 @@ export function parseGatePhrase(prompt) {
 
 /* ---------------------------------------------------------------- the disk */
 
+// Files an application makes on its own when you merely open or download something: Office owner files (~$x.docx),
+// editor backups and swap files, temporary and partial downloads, and folder metadata. Dot files are skipped too.
+export const JUNK = /^~\$|~$|\.(?:tmp|temp|swp|swo|swx|bak|crdownload|part|partial|download|lock)$|^(?:thumbs\.db|desktop\.ini|\.ds_store)$/i;
+export const isJunk = (name) => name.startsWith('.') || JUNK.test(name);
+
 function walkNewest(roots, w, deadline) {
   const exts = new Set((w.extensions || []).map((e) => String(e).toLowerCase()));
   const skip = new Set(w.skipDirs || []);
@@ -182,7 +195,7 @@ function walkNewest(roots, w, deadline) {
     for (const e of ents) {
       if (--budget <= 0 || Date.now() > deadline) { truncated = true; return; }
       if (e.isDirectory()) { if (!skip.has(e.name) && !e.name.startsWith('.')) walk(path.join(d, e.name), depth + 1); }
-      else if (exts.has(path.extname(e.name).toLowerCase())) {
+      else if (!isJunk(e.name) && exts.has(path.extname(e.name).toLowerCase())) {
         try { const m = fs.statSync(path.join(d, e.name)).mtimeMs; if (m > newest) newest = m; } catch { /* gone */ }
       }
       if (truncated) return;
@@ -202,7 +215,8 @@ export function newestWork(cfg, f, now) {
   const ttl = (Number(w.cacheMinutes) || 0) * 60e3;
   if (c && c.key === key && now >= c.at && now - c.at < ttl) return { newest: c.newest, cached: true, truncated: c.truncated };
   const { newest, truncated } = walkNewest(roots, w, Date.now() + (Number(w.budgetMs) || 100));
-  quietWrite(f.cache, { at: now, key, newest, truncated });
+  // A scan cut short by its caps has not seen every file, so its "newest" may be too old: never cache it.
+  if (!truncated) quietWrite(f.cache, { at: now, key, newest, truncated: false });
   return { newest, cached: false, truncated };
 }
 
@@ -212,7 +226,7 @@ const entryPath = (e) => (typeof e === 'string' ? e : isObj(e) ? String(e.path ?
  * When did this watched path last change in a way that counts? A file with a known baseline size counts only when
  * its size moves away from the last size seen (tracked in seen.json); without a known size, any save counts.
  */
-function changedAt(id, entry, snap, seen, dirty) {
+function changedAt(id, entry, snap, seen, dirty, exts) {
   const p = entryPath(entry);
   if (!p) return 0;
   let st;
@@ -224,10 +238,10 @@ function changedAt(id, entry, snap, seen, dirty) {
       if (depth > 3 || Date.now() > deadline) return;
       let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
       for (const e of ents.slice(0, 2000)) {
-        if (e.name.startsWith('.') || e.name === 'node_modules') continue;
+        if (isJunk(e.name) || e.name === 'node_modules') continue;
         const q = path.join(d, e.name);
         if (e.isDirectory()) walk(q, depth + 1);
-        else { try { const m = fs.statSync(q).mtimeMs; if (m > newest) newest = m; } catch { /* gone */ } }
+        else if (exts.has(path.extname(e.name).toLowerCase())) { try { const m = fs.statSync(q).mtimeMs; if (m > newest) newest = m; } catch { /* gone */ } }
       }
     };
     walk(p, 0);
@@ -277,13 +291,14 @@ export function decide(cfg, f, now) {
     return Number(it.everyDays) > 0 ? ms(e.at) > since(it) : true;
   };
   const begun = (it) => evidenceOk(it)
-    || (Array.isArray(it.paths) ? it.paths : []).some((e) => changedAt(it.id, e, snap[it.id], seen, dirty) > since(it));
+    || (Array.isArray(it.paths) ? it.paths : []).some((e) => changedAt(it.id, e, snap[it.id], seen, dirty, extsFor(it)) > since(it));
+  const extsFor = (it) => new Set((Array.isArray(it.extensions) ? it.extensions : (cfg.watch && cfg.watch.extensions) || []).map((x) => String(x).toLowerCase()));
 
   const open = [];
   const items = Array.isArray(cfg.items) ? cfg.items : [];
   for (const it of items) {
     if (!it || !it.id || !isActive(it, now, dueSoon)) continue;
-    if (!begun(it)) open.push({ id: String(it.id), title: String(it.title || it.id), short: it.short, next: it.next, due: it.due });
+    if (!begun(it)) open.push({ id: safeId(it.id) || 'item', title: clip(it.title || it.id, 80), short: it.short, next: it.next, due: it.due });
   }
   if (dirty.v) quietWrite(f.seen, seen);
 
@@ -292,11 +307,12 @@ export function decide(cfg, f, now) {
     const dl = readJson(String(cfg.deadlinesFile), []);
     const arr = Array.isArray(dl) ? dl : (isObj(dl) ? (dl.items || dl.deadlines || []) : []);
     for (const x of Array.isArray(arr) ? arr.slice(0, 500) : []) {
-      if (!isObj(x) || !x.id || known.has(x.id) || ev[x.id]) continue;
+      const id = isObj(x) ? safeId(x.id) : '';
+      if (!id || known.has(x.id) || known.has(id) || ev[x.id] || ev[id]) continue;
       if (x.status !== undefined && x.status !== 'open') continue;
       const due = ms(x.due);
       if (!(due > now && due - now <= dueSoon)) continue; // past entries belong to whatever tracks deadlines
-      open.push({ id: String(x.id), title: String(x.title || x.id), due: x.due, next: 'start it, or say it is already done so it can be checked and recorded' });
+      open.push({ id, title: clip(x.title || id, 80), due: new Date(due).toISOString(), next: 'start it, or say it is already done so it can be checked and recorded' });
     }
   }
 
@@ -304,9 +320,10 @@ export function decide(cfg, f, now) {
   if (open.length) reasons.push(`${open.length} item${open.length === 1 ? '' : 's'} not begun`);
   const { newest, truncated } = newestWork(cfg, f, now);
   const idleMs = (Number(cfg.idleHours) || 48) * H;
-  const idle = newest > 0 && now - newest > idleMs;
+  const idle = !truncated && newest > 0 && now - newest > idleMs; // a partial scan proves nothing about idleness
   if (idle) reasons.push(`no watched work file changed since ${iso(newest)} (over ${Math.round(idleMs / H)} h)`);
-  return { on: reasons.length > 0, reasons, open, idle, newest: newest ? iso(newest) : null, scanTruncated: !!truncated };
+  return { on: reasons.length > 0, reasons, open, idle, newest: newest ? iso(newest) : null, scanTruncated: !!truncated,
+    ...(truncated ? { note: 'the idle scan hit watch.maxEntries or watch.budgetMs, so the idle trigger was skipped; narrow watch.roots or raise the caps' } : {}) };
 }
 
 /* ---------------------------------------------------------------- what Claude is told */

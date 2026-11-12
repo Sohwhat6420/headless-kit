@@ -31,6 +31,26 @@ All notable changes to headless-kit. Dates are UTC.
     `--send`; ledger, sender authentication from the topmost `Authentication-Results`, auto-reply loop guards.
   - `github-stars`: new-star diff for any GitHub user with seeding, a Markdown log and an ntfy or webhook push.
 
+### Fixed (review of focus-gate and lane-mailbox, before release)
+
+- `lane-mailbox`, token scope: a github.com token (`GH_TOKEN`, `GITHUB_TOKEN`, `gh auth token`) is only ever sent to
+  `api.github.com`. An Enterprise `--api-base` uses `GH_ENTERPRISE_TOKEN`, `GITHUB_ENTERPRISE_TOKEN` or
+  `gh auth token --hostname HOST`; a local stub gets no real credential unless `--token-file` names one. Redirects
+  are never followed (exit 4). The README no longer calls the default token read-only; it recommends a fine-grained
+  read-only token with `--token-file`.
+- `lane-mailbox`, untrusted text: the mail's `file` is rebuilt from safe characters (`nameSanitised: true` when that
+  changed it), and the strip class now covers every Unicode format character (including the tag block
+  U+E0000 to U+E007F), variation selectors and blank fillers; line and paragraph separators become newlines.
+- `lane-mailbox`: `--branch` and `--inbox` refuse `.`, `..`, empty parts and a leading `-`; git gets fully qualified
+  refs; commit ids must be hex; a 403 reading mail is fatal; no sleep runs past `--max-min`; the CLI (and the stub)
+  start correctly through a symlink such as an npm bin.
+- `focus-gate`: a scan cut short by `watch.maxEntries` or `watch.budgetMs` no longer fires the idle trigger and is
+  not cached. Office owner files (`~$x.docx`), editor backups and swap files, temporary and partial downloads, lock
+  files and folder metadata never count as work, and folder items honour `extensions` (the item's own, else
+  `watch.extensions`). The peer-message filter needs `SENDER -> RECIPIENT:`, so a typed `TODO -> ...` is still
+  yours (`peerPattern` to change it). Deadline-file ids and titles are cleaned and clipped before they reach the
+  context.
+
 ### Fixed (review of the trackers, before release)
 
 - `mail-reply`, loop guards: the Composio search excludes the mailbox's own mail (`-in:sent -in:draft -from:me`),

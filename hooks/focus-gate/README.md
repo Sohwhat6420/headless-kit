@@ -49,7 +49,7 @@ node focus-gate.mjs status
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="23 of 23 tests pass: the positive controls (untouched on, same-size save on, real edit off, hold off, settled on, idle after 48 hours, stale recurring evidence on), the deadlines file, snapshot, pause, prompt filtering, failing silent and speed" width="80%">
+<img src="docs/test-run.svg" alt="28 of 28 tests pass: the positive controls (untouched on, same-size save on, real edit off, hold off, settled on, idle after 48 hours, stale recurring evidence on), the deadlines file, snapshot, pause, prompt filtering, failing silent and speed" width="80%">
 </details>
 
 It is part of **[headless-kit](../../README.md)**: small, agent-first tools with no window, no network and no
@@ -84,8 +84,9 @@ It never blocks a prompt (`decision: "block"` would also stop the on-task ones).
   "size": 25025 }` (the untouched size), or a plain path string whose size `snapshot` records for you. An
   open-and-save of the untouched starter keeps the same size, so it does not count. The hook remembers the last size
   it saw per item and path, so a recurring item needs a fresh change inside its window.
-- **A plain path with no recorded size** counts on any save after the baseline. A **folder** counts any file in it
-  (three levels deep) changed after the baseline.
+- **A plain path with no recorded size** counts on any save after the baseline. A **folder** counts a work file in it
+  (three levels deep, up to 2,000 entries a folder) changed after the baseline. Work file means one of the item's own
+  `extensions`, or else `watch.extensions`, so a blog folder written in Markdown needs `"extensions": [".md"]`.
 - **Evidence** for work this machine cannot see (another computer, an online quiz, a paper exercise). Claude checks it
   first (a screenshot, a file listing), then records it:
 
@@ -95,6 +96,11 @@ It never blocks a prompt (`decision: "block"` would also stop the on-task ones).
 
 - **Recurring items** (`"everyDays": 2`) only count evidence or a size change from the last N days, so the gate comes
   back on when you stop.
+
+**Files an application makes on its own never count**, for an item or for the idle trigger: Office owner files
+(`~$essay.docx`, created the moment Word opens the essay), editor backups and swap files (`essay.docx~`, `*.swp`,
+`*.bak`), temporary and partial downloads (`*.tmp`, `*.crdownload`, `*.part`), lock files, `Thumbs.db`,
+`desktop.ini`, and anything whose name starts with a dot (`.~lock.essay.docx#`, `.DS_Store`).
 
 For the idle trigger, only files with the listed `watch.extensions` count. Markdown, JSON and HTML are left out by
 default because agents write those; add `.md` if you write your own notes in it. Folders in `watch.skipDirs` and any
@@ -119,8 +125,9 @@ Only yours. It stays silent for:
 
 - injected turns: `[SYSTEM ...]` notices, `<task-notification>`, `<cross-session-message>`, `<agent-message>`,
   `<system-reminder>` and similar blocks;
-- peer agents: a line starting with an upper-case label and an arrow (`LANE-A -> ORCH: ...`), and anything matching
-  your own `ignorePatterns`;
+- peer agents: an upper-case sender, an arrow, an upper-case recipient and a colon (`LANE-A -> ORCH: ...`; you
+  typing `TODO -> fix the tests` still counts as you; change it with `peerPattern`, or `""` to turn it off), and
+  anything matching your own `ignorePatterns`;
 - unattended runs: `CLAUDE_CODE_SESSION_ATTENDED` set to anything but `1`, or an `sdk-*` entrypoint (turn this off
   with `"skipUnattended": false`);
 - any hook event other than `UserPromptSubmit`.
@@ -149,7 +156,7 @@ Looked up in this order: `--config <file>` (CLI only), `$FOCUS_GATE_CONFIG`, the
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `items[]` | `[]` | `id`, `title`, `short` (the "... first" label), `next` (the single next step), `from`, `due` (ISO times), `everyDays`, `paths`, `done` |
+| `items[]` | `[]` | `id`, `title`, `short` (the "... first" label), `next` (the single next step), `from`, `due` (ISO times), `everyDays`, `paths`, `extensions` (for folder paths), `done` |
 | `baseline` | `null` | ISO time; saves before it never count |
 | `rule` | `""` | your own words, quoted back to Claude when the gate is on |
 | `allowed` | items, urgent, quick | what Claude may still help with while the gate is on |
@@ -165,6 +172,7 @@ Looked up in this order: `--config <file>` (CLI only), `$FOCUS_GATE_CONFIG`, the
 | `holdMaxHours`, `pauseMaxHours` | `3`, `4` | caps |
 | `settledPattern` | settled, arrived, ... | regex source (case-insensitive) that arms a hold |
 | `ignorePatterns` | `[]` | regex sources: prompts that are not yours |
+| `peerPattern` | sender `->` RECIPIENT`:` | regex source for peer-agent messages; `""` turns it off |
 | `skipUnattended` | `true` | stay silent in headless and SDK runs |
 | `idleShort`, `heldAdvice` | | the label when only the idle trigger is on; the hint while held |
 
@@ -173,7 +181,11 @@ Looked up in this order: `--config <file>` (CLI only), `$FOCUS_GATE_CONFIG`, the
 The hook reads a few small JSON files and `stat`s the items' paths. The folder scan for the idle trigger is the only
 walk; it is capped by entries and by `budgetMs`, and cached for `cacheMinutes`. The test suite times a cold decision
 over 3,000 files at about 10 to 15 ms and fails above 200 ms; the whole hook process, Node start-up included, took
-about 30 ms on the Linux test machine. A scan that hits a cap reports `scanTruncated: true` in `status`.
+about 30 ms on the Linux test machine.
+
+A scan that hits a cap has not seen every file, so its newest time may be too old. It therefore **never fires the idle
+trigger and is not cached**; `status` reports `scanTruncated: true` with a note. Narrow `watch.roots` or raise
+`watch.maxEntries` / `watch.budgetMs` if you see it.
 
 ## Privacy
 
@@ -191,17 +203,20 @@ Claude's context when the gate is on, so keep anything you would not type into a
 - Fails silent: a missing or broken config, a corrupt state file or unexpected input means exit `0` and no output, so
   a bug never stands between you and Claude.
 - Prompt text is matched with anchored, linear regular expressions; the pause phrase must start the prompt.
-- What reaches Claude's context: your item text, and the `id`, `title` and `due` of deadlines-file entries (each
-  title cut to 80 characters). If another tool writes that file from fetched pages, its titles are untrusted data
+- What reaches Claude's context: your item text, and the `id`, `title` and `due` of deadlines-file entries. Ids are
+  rebuilt from `A-Z a-z 0-9 . _ : -` (at most 64; an entry with nothing left is skipped), titles lose control and
+  invisible format characters (bidi, zero-width, the tag block) and are cut to 80 characters, and `due` is
+  re-written as an ISO time. If another tool writes that file from fetched pages, its titles are still untrusted data
   (OWASP LLM01). The contents of watched files are never read: they are only `stat`ed.
 
 ## Status
 
-- Tested (23 offline tests, `node --test`, Linux, Node 22; CI runs Windows and Linux): the positive controls
+- Tested (28 offline tests, `node --test`, Linux, Node 22; CI runs Windows and Linux): the positive controls
   (untouched on, same-size save on, real edit off, edit before the baseline on, hold off, "settled" on, a hold that
   runs out, idle on past 48 h on a fake clock, evidence older than `everyDays` on again, a recurring file needing a
   fresh change), the deadlines file, `from` / `due` / `done`, snapshot, folders and missing files, pause by CLI and by
-  typed phrase, prompt filtering, failing silent, speed and the shipped examples.
+  typed phrase, prompt filtering (including `TODO -> ...` typed by you), lock and temporary files, a truncated scan,
+  folder extensions, cleaned deadline ids and titles, failing silent, speed and the shipped examples.
 - Not tested: inside a live Claude Code session as an installed plugin (the output follows the current
   `UserPromptSubmit` hook shape: `hookSpecificOutput.additionalContext`), and macOS.
 - Whether Claude follows the gate line is up to the model. It has not been measured; treat it as strong advice, not
