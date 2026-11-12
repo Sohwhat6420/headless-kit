@@ -1,0 +1,13 @@
+{
+  "$comment": "Every key is optional except user (or gh: true). Secrets are never put here: ntfyTopicFile, webhookUrlFile and tokenFile name files holding one line. Relative paths resolve against this file.",
+  "user": "octocat",
+  "state": "github-stars-state.json",
+  "logMd": "NEW-STARS.md",
+  "ntfyTopicFile": "/path/to/ntfy-topic.txt",
+  "ntfyBase": "https://ntfy.sh",
+  "webhookUrlFile": null,
+  "tokenFile": null,
+  "gh": false,
+  "maxPush": 10,
+  "tzOffsetH": 0
+}

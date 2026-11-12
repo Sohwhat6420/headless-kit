@@ -1,0 +1,34 @@
+{
+  "$comment": "IMAP + SMTP example. Passwords and keys are never put here: passwordFile / keyFile name a file holding one line. Relative paths resolve against this file. template may be a string (plain text) or this structured form (HTML + plain text); placeholders: {date} {time} {zone} {received} {subject} {sender}.",
+  "source": "imap",
+  "allow": ["you@example.com", "@example.org"],
+  "self": [],
+  "maxAgeMin": 60,
+  "maxPerPass": 10,
+  "tzOffsetH": 0,
+  "state": "mail-reply-state.json",
+  "template": {
+    "headline": "Got it: your message is in the queue",
+    "lines": [
+      { "lead": "What happens next", "text": "It is read and dealt with in order." },
+      { "lead": "You'll hear back", "text": "Here in this thread." },
+      { "lead": "Your email", "text": "“{subject}”, received {received}" }
+    ],
+    "footer": "Automatic acknowledgement, {date} {time} {zone} · no AI model read your message"
+  },
+  "imap": {
+    "host": "imap.example.com",
+    "port": 993,
+    "user": "bot@example.com",
+    "passwordFile": "/path/to/app-password.txt",
+    "mailbox": "INBOX",
+    "requireAuth": true,
+    "authServId": "mx.example.com",
+    "markRead": false
+  },
+  "smtp": {
+    "host": "smtp.example.com",
+    "port": 465,
+    "from": "bot@example.com"
+  }
+}

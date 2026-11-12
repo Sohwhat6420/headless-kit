@@ -1,0 +1,17 @@
+{
+  "$comment": "Composio example: a Gmail account connected in Composio. keyFile holds a ck_ (Composio Connect) or project API key on one line. account: the connected account id (optional with a ck_ key). labelId: a Gmail label id to add after replying (optional). self: the connected mailbox's own address, which is never answered.",
+  "source": "composio",
+  "allow": ["you@example.com"],
+  "self": ["connected-mailbox@example.com"],
+  "maxAgeMin": 120,
+  "maxPerThread": 3,
+  "maxPerSender": 20,
+  "state": "mail-reply-state.json",
+  "composio": {
+    "keyFile": "/path/to/composio-key.txt",
+    "account": null,
+    "labelId": null,
+    "markRead": true,
+    "windowDays": 2
+  }
+}

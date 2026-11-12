@@ -7,7 +7,7 @@ Instructions for AI coding agents working in this repository.
 Small, zero-dependency Node tools and Claude Code hooks for people who run AI agents. Each item lives in its own
 folder and is independent of the others:
 
-- `tools/<category>/<tool>/`: CLIs (`routing`, `guards`, `research`).
+- `tools/<category>/<tool>/`: CLIs (`routing`, `guards`, `research`, `trackers`).
 - `hooks/<hook>/`: Claude Code command hooks; `hooks/hooks.json` wires them into the plugin.
 - `hooks/instruction-keeper/`: a mod with its own `.claude-plugin/plugin.json`.
 - `.claude-plugin/`: the plugin and marketplace manifests.

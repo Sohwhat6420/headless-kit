@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="354" viewBox="0 0 981 354" role="img" aria-label="github-stars: a real run on a public account">
+<rect x="0.5" y="0.5" width="980" height="353" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">github-stars: a real run on a public account</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node github-stars.mjs --user octocat --state stars.json</tspan></text>
+<text x="20" y="86" xml:space="preserve">{"ok":true,"user":"octocat","read":3,"seeded":true,"new":[],"pushed":{"ntfy":0,"webhook":0,"failed":0},"state":"</text>
+<text x="20" y="106" xml:space="preserve">  stars.json","dryRun":false}</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#7d8590"># (demo) forget the newest star in the state file, as if it had just been starred</tspan></text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node github-stars.mjs --user octocat --state stars.json --log-md NEW-STARS.md</tspan></text>
+<text x="20" y="166" xml:space="preserve">{"ok":true,"user":"octocat","read":3,"seeded":false,"new":[{"name":"violet-org/boysenberry-repo","at":"2016-07-2</text>
+<text x="20" y="186" xml:space="preserve">  8T18:43:22Z","url":"https://github.com/violet-org/boysenberry-repo","desc":"Testing","stars":438,"lang":""}],"pu</text>
+<text x="20" y="206" xml:space="preserve">  shed":{"ntfy":0,"webhook":0,"failed":0},"state":"stars.json","dryRun":false}</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node github-stars.mjs --user octocat --state stars.json</tspan></text>
+<text x="20" y="246" xml:space="preserve">{"ok":true,"user":"octocat","read":3,"seeded":false,"new":[],"pushed":{"ntfy":0,"webhook":0,"failed":0},"state":</text>
+<text x="20" y="266" xml:space="preserve">  "stars.json","dryRun":false}</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">tail -1 NEW-STARS.md</tspan></text>
+<text x="20" y="306" xml:space="preserve">| 2016-07-28 18:43 UTC | [violet-org/boysenberry-repo](https://github.com/violet-org/boysenberry-repo) | Testing</text>
+<text x="20" y="326" xml:space="preserve">   | 438 |  |</text>
+</g>
+</svg>

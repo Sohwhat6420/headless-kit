@@ -25,7 +25,7 @@ hook has to meet the same bar as the existing ones.
 | A command hook | `hooks/<hook>/` with the script, a `hook.json` fragment, tests and README; add its entries to `hooks/hooks.json` |
 | A mod with its own plugin | `hooks/<name>/.claude-plugin/plugin.json`, then list it in `.claude-plugin/marketplace.json` |
 
-Categories today: `routing`, `guards`, `research`. Propose a new one in the pull request if none fits.
+Categories today: `routing`, `guards`, `research`, `trackers`. Propose a new one in the pull request if none fits.
 
 ## Before you open a pull request
 
