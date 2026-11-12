@@ -10,7 +10,7 @@
 
 The tools my AI agents use every day, kept as light as I can make them. They route work to whichever model pool is
 about to lose unspent allowance, keep Claude Code honest with hooks, guard the machine before heavy work, pull
-research without a browser, and watch inboxes and GitHub stars with plain code instead of model calls. [reddit-pull](tools/research/reddit-pull) and [detached-run](tools/guards/detached-run)
+research without a browser, keep me on the work I keep putting off, carry reports back from cloud agents, and watch inboxes and GitHub stars with plain code instead of model calls. [reddit-pull](tools/research/reddit-pull) and [detached-run](tools/guards/detached-run)
 live here too.
 
 - **No dependencies.** Most tools are a single Node file: copy the one you need and leave the rest.
@@ -61,6 +61,7 @@ written to files. Anything a tool fetches from outside is data for the agent to 
 | Claude Code hooks | [dismissal-watch](hooks/dismissal-watch) | Flags a reply that says "impossible" without having searched, and tells the model to search first. | Claude Code, Node 18+ |
 | Claude Code hooks | [presence](hooks/presence) | One present/away switch for every session: ask in chat when you are there, keep going on logged best guesses when you are not. `/away` and `/back` skills. | Claude Code, Node 18+ |
 | Claude Code hooks | [session-card-push](hooks/session-card-push) | When a tool leaves something only one client shows (a proposal card, a refused start), tells the model to notify you and ask in chat. | Claude Code, Node 18+ |
+| Claude Code hooks | [focus-gate](hooks/focus-gate) | Claude turns down off-task requests ("Essay first") until real work on the task you keep putting off exists on disk: a watched file saved with a new size, or checked evidence. Due-soon and idle triggers, recurring items, hold while in transit, pause only with a reason. | Claude Code, Node 18+ |
 | Claude Code hooks | [instruction-keeper](hooks/instruction-keeper) | A mod that keeps a verbatim, redacted ledger of what you asked for and checks the work has not dropped any of it. Its own plugin. | Claude Code mods |
 | Machine guards | [detached-run](tools/guards/detached-run) | Starts a Windows process that outlives its launcher and never opens a window. | Node 18+, Windows |
 | Machine guards | [memory-gate](tools/guards/memory-gate) | A pre-flight check before heavy work: commit charge as used / limit, a verdict (ok, no-parallelism, stop) and an exit code per verdict. Never guesses. | Node 18+, Windows / Linux; macOS approximate |
@@ -72,6 +73,7 @@ written to files. Anything a tool fetches from outside is data for the agent to 
 | Research | [token-totals](tools/research/token-totals) | Totals the tokens in Claude Code session logs, deduplicated, per day and per model; optional ledger that never lowers a recorded day. Read-only on every log. | Node 18+, any OS |
 | Trackers | [mail-reply](tools/trackers/mail-reply) | Answers every email from an allow-list in its own thread within minutes, from a template (bold headline, three short lines), over IMAP + SMTP or Composio. No model reads the mail; dry run unless `--send`. | Node 18+, any OS |
 | Trackers | [github-stars](tools/trackers/github-stars) | Diffs any user's GitHub stars against a state file and pushes only what is new (ntfy or a webhook), plus an optional Markdown log. No model calls. | Node 18+, any OS |
+| Trackers | [lane-mailbox](tools/trackers/lane-mailbox) | A private GitHub repo as the return channel for agent sessions that cannot message back: an ETag poller whose exit wakes the orchestrator, mail sanitised and marked untrusted, and a `post` helper that refuses secrets. | Node 18+, any OS; a GitHub token |
 
 ## See them run
 
@@ -111,7 +113,7 @@ category). Tools that support only Windows are skipped on other systems. GitHub 
 tools/routing/    model routing + dispatch
 tools/guards/     machine guards
 tools/research/   research and capture
-tools/trackers/   token-free change trackers (mail, stars)
+tools/trackers/   token-free change trackers (mail, stars, a lane mailbox)
 hooks/            Claude Code hooks (hooks/hooks.json wires them into the plugin)
 .claude-plugin/   plugin.json + marketplace.json
 ```
@@ -131,7 +133,10 @@ name for keys and personal data and reports the type and line, never the value.
 
 The hooks fail open (an error means no output, never a block), and none of them approves anything on your behalf:
 `plan-depth` never outputs `permissionDecision: "allow"`, and `dismissal-watch` only blocks if you opt in.
-`instruction-keeper` redacts token shapes before it stores anything. Of the guards that act, `app-closer`
+`instruction-keeper` redacts token shapes before it stores anything. `focus-gate` only adds context (it never blocks a
+prompt) and is a commitment device, not a lock. `lane-mailbox` treats every mail as untrusted lane output: it strips
+control and bidirectional characters, redacts token shapes, marks the result `untrusted`, and its `post` refuses a
+report that looks like it contains a secret; its GitHub token is read in-process and never printed. Of the guards that act, `app-closer`
 only reports unless you pass `--close`, and `bin-dump` moves rather than deletes (`--dry-run` to preview first).
 
 ## Roadmap
