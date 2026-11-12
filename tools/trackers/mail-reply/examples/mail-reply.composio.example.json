@@ -5,6 +5,7 @@
   "self": ["connected-mailbox@example.com"],
   "maxAgeMin": 120,
   "maxPerThread": 3,
+  "maxPerSender": 20,
   "state": "mail-reply-state.json",
   "composio": {
     "keyFile": "/path/to/composio-key.txt",

@@ -33,7 +33,8 @@ const HELP = `mail-reply ${VERSION}: same-thread acknowledgement from a template
   --config FILE   JSON config (env MAIL_REPLY_CONFIG); see examples/mail-reply.example.json
   --send          really send replies (without it: a dry run that reports what it would send)
   --every SEC     keep going: one pass every SEC seconds (minimum 30); one JSON line per pass
-  --seed          record every message the mailbox returns now as handled, without replying (start on a busy inbox)
+  --seed          record every message one listing returns as handled, without replying (start on a busy inbox;
+                  IMAP: any sender, the newest 100 in the window; Composio: allowed senders only)
   --state FILE    the ledger of answered messages (env MAIL_REPLY_STATE)
   --help          this text
 
@@ -122,8 +123,9 @@ const aligned = (a, b) => Boolean(a && b && a.includes('.') && b.includes('.') &
  *   - dmarc=pass whose header.from is that domain; or
  *   - spf=pass whose smtp.mailfrom is aligned with it; or
  *   - dkim=pass whose header.d (or header.i) is aligned with it.
- * A dmarc result that failed, or that names another domain, is final. With authServId, the header must be that
- * server's (matched whole).
+ * A dmarc=fail is final, and so is ANY dmarc result (pass, none, temperror, ...) whose header.from is another
+ * domain: the server evaluated a different author than the one read here. With authServId, the header must be
+ * that server's (matched whole).
  */
 export function authPassed(authResults = [], authServId = null, fromDomain = '') {
   const top = String(authResults[0] || '');
@@ -133,9 +135,9 @@ export function authPassed(authResults = [], authServId = null, fromDomain = '')
   if (authServId && servId !== String(authServId).toLowerCase()) return false;
   const dmarc = results.filter((r) => r.method === 'dmarc');
   if (dmarc.some((r) => r.result === 'fail')) return false;
-  const named = dmarc.filter((r) => r.result === 'pass' && r.props['header.from']);
+  const named = dmarc.filter((r) => r.props['header.from']);
   if (named.some((r) => !aligned(domainOf(r.props['header.from']), dom))) return false;
-  if (named.length) return true;
+  if (named.some((r) => r.result === 'pass')) return true;
   return results.some((r) => r.result === 'pass' && (
     (r.method === 'spf' && aligned(domainOf(r.props['smtp.mailfrom']), dom))
     || (r.method === 'dkim' && (aligned(domainOf(r.props['header.d']), dom) || aligned(domainOf(r.props['header.i']), dom)))));
@@ -144,11 +146,15 @@ export function authPassed(authResults = [], authServId = null, fromDomain = '')
 const DAY_MS = 86_400_000;
 const NO_REPLY_LOCAL = /^(mailer-daemon|postmaster|no[-_.]?reply|do[-_.]?not[-_.]?reply|bounces?)(?:[-+_.=].*)?$/i;
 
-/** Replies already sent in this thread in the last day. */
-export const threadCount = (threads, threadId, nowMs) => (threads?.[threadId] || []).filter((t) => nowMs - t < DAY_MS).length;
+// A Return-Path is a bounce only when it is null or a mail system's own address. Mail services send ordinary mail
+// with paths like bounces+id=domain@em1.example.com, so "bounce" in the local part proves nothing.
+const BOUNCE_PATH_LOCAL = /^(mailer-daemon|postmaster)$/i;
+
+/** Replies already sent to this key (a thread id or a sender address) in the last day. */
+export const threadCount = (map, key, nowMs) => (map?.[key] || []).filter((t) => nowMs - t < DAY_MS).length;
 
 /** Should this message get the acknowledgement? Returns {reply: true, to} or {reply: false, reason}. */
-export function decide(msg, { allowed, self = [], ledger, threads = {}, maxPerThread = 3, nowMs, maxAgeMin, requireAuth, requireHeaders = false, authKnown, authServId }) {
+export function decide(msg, { allowed, self = [], ledger, threads = {}, maxPerThread = 3, senders = {}, maxPerSender = 20, nowMs, maxAgeMin, requireAuth, requireHeaders = false, authServId }) {
   if (ledger[msg.id]) return { reply: false, reason: 'already' };
   const to = addressOf(msg.from);
   if (!to || !allowed(to)) return { reply: false, reason: 'not-allowed' };
@@ -160,17 +166,19 @@ export function decide(msg, { allowed, self = [], ledger, threads = {}, maxPerTh
   if (/\b(all|oof|autoreply)\b/i.test(h.autoResponseSuppress || '')) return { reply: false, reason: 'auto-response-suppress' };
   if (h.returnPath !== undefined && h.returnPath !== '') {
     const rp = String(h.returnPath).replace(/\s+/g, '');
-    if (rp === '<>' || NO_REPLY_LOCAL.test(rp.replace(/^<|>$/g, '').split('@')[0])) return { reply: false, reason: 'bounce' };
+    if (rp === '<>' || BOUNCE_PATH_LOCAL.test(rp.replace(/^<|>$/g, '').split('@')[0])) return { reply: false, reason: 'bounce' };
   }
+  if (/^auto[-_]?repl(y|ied)\b/i.test(h.precedence || '')) return { reply: false, reason: 'auto-submitted' };
   if (h.listId || /^(bulk|list|junk)\b/i.test(h.precedence || '')) return { reply: false, reason: 'list-mail' };
   const t = Date.parse(msg.receivedAt || '');
   if (!Number.isFinite(t)) return { reply: false, reason: 'no-date' };
   if (t > nowMs + 5 * 60_000) return { reply: false, reason: 'future' };
   if (nowMs - t > maxAgeMin * 60_000) return { reply: false, reason: 'too-old' };
   if (!msg.threadId) return { reply: false, reason: 'no-thread' };
-  const known = authKnown ?? Array.isArray(h.authResults);
-  if (requireAuth && known && !authPassed(h.authResults, authServId, to.split('@')[1])) return { reply: false, reason: 'unauthenticated' };
+  // requireAuth fails closed: no Authentication-Results to read (a transport that returned no headers) is not a pass.
+  if (requireAuth && !(Array.isArray(h.authResults) && authPassed(h.authResults, authServId, to.split('@')[1]))) return { reply: false, reason: 'unauthenticated' };
   if (threadCount(threads, msg.threadId, nowMs) >= maxPerThread) return { reply: false, reason: 'thread-cap' };
+  if (threadCount(senders, to, nowMs) >= maxPerSender) return { reply: false, reason: 'sender-cap' };
   return { reply: true, to };
 }
 
@@ -274,6 +282,7 @@ export function settings(argv, env = process.env, cwd = process.cwd()) {
     maxAgeMin: Number(c.maxAgeMin ?? 60),
     maxPerPass: Number(c.maxPerPass ?? 10),
     maxPerThread: Number(c.maxPerThread ?? 3),
+    maxPerSender: Number(c.maxPerSender ?? 20),
     tzOffsetH: Number(c.tzOffsetH ?? 0),
     template: checkTemplate(c.templateFile ? readTemplateFile(p(c.templateFile)) : (c.template || DEFAULT_TEMPLATE)),
     state: o.state ? p(o.state, cwd) : env.MAIL_REPLY_STATE ? p(env.MAIL_REPLY_STATE, cwd) : p(c.state || 'mail-reply-state.json'),
@@ -282,6 +291,7 @@ export function settings(argv, env = process.env, cwd = process.cwd()) {
     composio: { ...COMPOSIO_DEFAULTS, ...(c.composio || {}) },
   };
   if (!(Number.isInteger(s.maxPerThread) && s.maxPerThread >= 1)) throw new UsageError('maxPerThread must be a whole number from 1');
+  if (!(Number.isInteger(s.maxPerSender) && s.maxPerSender >= 1)) throw new UsageError('maxPerSender must be a whole number from 1');
   if (s.every !== undefined && (!Number.isFinite(s.every) || s.every < 30)) throw new UsageError('--every must be 30 seconds or more');
   if (!(s.maxAgeMin >= 1)) throw new UsageError('maxAgeMin must be 1 or more');
   if (!(Number.isInteger(s.maxPerPass) && s.maxPerPass >= 1)) throw new UsageError('maxPerPass must be a whole number from 1');
@@ -338,16 +348,20 @@ export function makeTransport(s, deps = {}) {
 
 // ---------------------------------------------------------------------------------------------- one pass
 
-/** The state file: {replied: {messageId: ISO time}, threads: {threadId: [reply times, ms]}}. */
+/**
+ * The state file: {replied: {messageId: ISO time}, threads: {threadId: [reply times, ms]}, senders: {address:
+ * [reply times, ms]}}. `replied` also holds messages a cap refused, so they are never answered once the cap lapses.
+ */
 const loadState = (f) => {
-  try { const j = JSON.parse(readFileSync(f, 'utf8')); return { replied: j.replied || {}, threads: j.threads && typeof j.threads === 'object' ? j.threads : {} }; }
-  catch { return { replied: {}, threads: {} }; }
+  const map = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  try { const j = JSON.parse(readFileSync(f, 'utf8')); return { replied: map(j.replied), threads: map(j.threads), senders: map(j.senders) }; }
+  catch { return { replied: {}, threads: {}, senders: {} }; }
 };
-function saveState(f, { replied, threads }, nowMs) {
+function saveState(f, { replied, threads, senders }, nowMs) {
   mkdirSync(dirname(f), { recursive: true });
-  const recent = Object.entries(threads).map(([k, v]) => [k, (Array.isArray(v) ? v : []).filter((t) => nowMs - t < DAY_MS)]).filter(([, v]) => v.length);
+  const recent = (m) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, (Array.isArray(v) ? v : []).filter((t) => nowMs - t < DAY_MS)]).filter(([, v]) => v.length).slice(-5000));
   const tmp = `${f}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify({ replied: trimLedger(replied), threads: Object.fromEntries(recent.slice(-5000)) }, null, 1));
+  writeFileSync(tmp, JSON.stringify({ replied: trimLedger(replied), threads: recent(threads), senders: recent(senders) }, null, 1));
   renameSync(tmp, f);
 }
 const redact = (m, secrets) => secrets.filter((x) => x && x.length >= 4).reduce((t, x) => t.split(x).join('[secret]'), String(m));
@@ -365,13 +379,15 @@ export async function pass(s, transport, { now = () => Date.now(), log = () => {
     out.checked = msgs.length;
     const from = s.source === 'composio' ? s.composio : s.imap;
     const ctx = {
-      allowed: s.allowed, self: s.self, ledger, threads: state.threads, maxPerThread: s.maxPerThread, nowMs, maxAgeMin: s.maxAgeMin,
-      requireAuth: from?.requireAuth ?? false, requireHeaders: from?.requireHeaders ?? false, authKnown: transport.authKnown, authServId: from?.authServId,
+      allowed: s.allowed, self: s.self, ledger, threads: state.threads, maxPerThread: s.maxPerThread, senders: state.senders, maxPerSender: s.maxPerSender,
+      nowMs, maxAgeMin: s.maxAgeMin, requireAuth: from?.requireAuth ?? false, requireHeaders: from?.requireHeaders ?? false, authServId: from?.authServId,
     };
     const sorted = msgs.sort((a, b) => Date.parse(a.receivedAt) - Date.parse(b.receivedAt));
     if (s.seed) {
-      // Seeding: every message the mailbox returned is recorded as handled, whoever sent it and however many
-      // there are, so nothing that exists now is answered later (not even after allow or maxAgeMin change).
+      // Seeding: every message this one listing returned is recorded as handled, however many there are (no
+      // maxPerPass) and without the decide() checks. The listing itself has limits: IMAP returns the newest 100
+      // of any sender since the day before the maxAgeMin cut-off; Composio returns only mail from allowed senders
+      // (its search is by sender), at most maxResults within windowDays.
       for (const m of sorted) {
         if (ledger[m.id]) { skip('already'); continue; }
         ledger[m.id] = new Date(nowMs).toISOString();
@@ -381,14 +397,20 @@ export async function pass(s, transport, { now = () => Date.now(), log = () => {
     }
     for (const m of s.seed ? [] : sorted) {
       const d = decide(m, ctx);
-      if (!d.reply) { skip(d.reason); continue; }
+      if (!d.reply) {
+        skip(d.reason);
+        // A message a cap refused is recorded, so it is not answered when the cap lapses (maxAgeMin can be over a day).
+        if (s.send && (d.reason === 'thread-cap' || d.reason === 'sender-cap')) { ledger[m.id] = new Date(nowMs).toISOString(); saveState(s.state, state, nowMs); }
+        continue;
+      }
       if (out.replied.length >= s.maxPerPass) { skip('over-max-per-pass'); continue; }
       const row = { id: m.id, threadId: m.threadId, to: d.to };
       const { text: body, html } = renderReply(s.template, { nowMs, tzOffsetH: s.tzOffsetH, subject: m.subject, sender: d.to, receivedMs: Date.parse(m.receivedAt || '') });
       (state.threads[m.threadId] ||= []).push(nowMs);   // counted in a dry run too, so the report matches a real pass
+      (state.senders[d.to] ||= []).push(nowMs);
       if (!s.send) { out.replied.push({ ...row, wouldSend: true }); continue; }
       try { await transport.reply(m, { to: d.to, body, html }); }
-      catch (e) { state.threads[m.threadId].pop(); out.errors.push(redact(`reply ${m.id}: ${String(e.message).slice(0, 160)}`, secrets())); continue; }   // retried next pass
+      catch (e) { state.threads[m.threadId].pop(); state.senders[d.to].pop(); out.errors.push(redact(`reply ${m.id}: ${String(e.message).slice(0, 160)}`, secrets())); continue; }   // retried next pass
       ledger[m.id] = new Date(nowMs).toISOString();
       saveState(s.state, state, nowMs);
       out.replied.push(row);

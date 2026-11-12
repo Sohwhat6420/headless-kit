@@ -27,8 +27,14 @@ All notable changes to headless-kit. Dates are UTC.
   quoted display name, a comment or an encoded word is never used; two addresses mean no sender). A pass must be
   aligned with that sender's domain: `dmarc=pass` with a matching `header.from`, or aligned `spf=pass` or
   `dkim=pass`. `authServId` is matched whole.
-- `mail-reply`, `--seed`: records every message the mailbox returns, no longer capped by `maxPerPass` or filtered
-  by the allow-list or `maxAgeMin`.
+- `mail-reply`, `--seed`: records every message one listing returns, no longer capped by `maxPerPass` (IMAP: any
+  sender, the newest 100 in the window; Composio: allowed senders only).
+- `mail-reply`, second review: `requireAuth` fails closed when there is no `Authentication-Results` to read (so
+  `composio.requireHeaders: false` also needs `requireAuth: false`); any `dmarc` result whose `header.from` is
+  another domain refuses the sender; new `maxPerSender` (default 20 in 24 hours) for loops over IMAP or across new
+  threads, and a message a cap refused is recorded so it is never answered later; `Precedence: auto_reply` is
+  skipped; Composio needs exactly one `From` header and no longer falls back to the summary field; a `Return-Path`
+  is a bounce only when it is `<>`, mailer-daemon or postmaster.
 - `mail-reply`: IMAP `LOGOUT` has a timeout and an SMTP server that closes mid-dialogue fails the reply instead of
   hanging; `In-Reply-To` is one message id and `References` is capped.
 - `github-stars`: zero-width, bidirectional and C1 control characters are stripped from fetched text; HTML and

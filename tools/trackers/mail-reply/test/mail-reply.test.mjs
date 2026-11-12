@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { run, settings, decide, makeAllow, addressOf, authPassed, render, renderReply, checkTemplate, DEFAULT_TEMPLATE, replySubject, trimLedger } from '../mail-reply.mjs';
 import { ResponseReader, decodeWords, imapDate, openImap } from '../lib/imap.mjs';
 import { buildReply, encodeHeader, sendMail } from '../lib/smtp.mjs';
-import { gmailQuery } from '../lib/composio.mjs';
+import { gmailQuery, gmailHeaders } from '../lib/composio.mjs';
 
 const PASSWORD = 'example-app-password-7c4a8d09';
 const KEY = 'ck_example_key_5f4dcc3b5aa765d6';
@@ -573,4 +573,107 @@ test('In-Reply-To is one message id; References keeps whole ids and stays inside
   assert.equal(refs.at(-1), id(99), 'the message being answered is last');
   assert.ok(!head.includes('y'.repeat(300)));
   assert.equal(buildReply({ from: BOT, to: OWNER, subject: 's', body: 'b', inReplyTo: 'garbage' }).includes('In-Reply-To'), false);
+});
+
+// ------------------------------------------------------------------------------------------- second review
+
+test('requireAuth with no Authentication-Results to read is unauthenticated, never a pass', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const ctx = { allowed: makeAllow([OWNER]), ledger: {}, nowMs, maxAgeMin: 60, requireHeaders: false };
+  const bare = { id: 'x', threadId: 't', from: OWNER, receivedAt: new Date(nowMs - MIN).toISOString(), headersKnown: false, headers: {} };
+  assert.equal(decide(bare, { ...ctx, requireAuth: true }).reason, 'unauthenticated');
+  assert.equal(decide({ ...bare, headers: undefined }, { ...ctx, requireAuth: true }).reason, 'unauthenticated');
+  assert.equal(decide(bare, { ...ctx, requireAuth: false }).reply, true);
+  // end to end: a Composio message that came back without headers
+  const msgs = [{ messageId: 'c01', threadId: 't1', messageTimestamp: new Date(nowMs - MIN).toISOString(), sender: OWNER, subject: 's', labelIds: ['INBOX'] }];
+  const { write } = setup();
+  let out = sink();
+  await run(['--config', write({ source: 'composio', allow: [OWNER], state: 'a.json', composio: { keyFile: 'key.txt', requireHeaders: false } }), '--send'], { stdout: out, env: {}, now: () => nowMs, fetchImpl: fakeComposio(msgs).fetchImpl });
+  assert.deepEqual(out.json().skipped, { unauthenticated: 1 });
+  assert.equal(out.json().replied.length, 0);
+  out = sink();
+  await run(['--config', write({ source: 'composio', allow: [OWNER], state: 'b.json', composio: { keyFile: 'key.txt', requireHeaders: false, requireAuth: false } }), '--send'], { stdout: out, env: {}, now: () => nowMs, fetchImpl: fakeComposio(msgs).fetchImpl });
+  assert.equal(out.json().replied.length, 1, 'both switches off: the documented way to reply without headers');
+});
+
+test('a sender is answered at most maxPerSender times a day, and a capped message is never answered later', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const mail = (n, ...extra) => ({ uid: n, at: nowMs - n * MIN, headers: [`From: ${OWNER}`, `Subject: s${n}`, `Message-ID: <k${n}@example.com>`, AUTH_PASS, ...extra] });
+  const imap = await mockImap([mail(1), mail(2), mail(3), mail(4), mail(5), mail(6, 'Precedence: auto_reply')]);
+  const smtp = await mockSmtp();
+  try {
+    const { d, write } = setup();
+    const cfg = write({ source: 'imap', allow: [OWNER], state: 'state.json', maxPerSender: 2, maxAgeMin: 3000, imap: { host: '127.0.0.1', port: imap.port, tls: false, user: BOT, passwordFile: 'pw.txt' }, smtp: { host: '127.0.0.1', port: smtp.port, tls: false } });
+    let out = sink();
+    await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs });
+    assert.deepEqual(out.json().replied.map((x) => x.id), ['<k5@example.com>', '<k4@example.com>'], 'over IMAP every message is its own thread: the sender cap is what stops a loop');
+    assert.deepEqual(out.json().skipped, { 'auto-submitted': 1, 'sender-cap': 3 });
+    out = sink();
+    await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs + 25 * 60 * MIN });
+    assert.equal(out.json().replied.length, 0, 'a day later, still inside maxAgeMin: the capped messages stay unanswered');
+    assert.equal(smtp.sent.length, 2);
+    assert.throws(() => settings(['--config', write({ source: 'composio', allow: [OWNER], maxPerSender: 0, composio: { keyFile: 'key.txt' } })], {}, d), /maxPerSender/);
+  } finally { await imap.close(); await smtp.close(); }
+  // the same for a capped Gmail thread
+  const loop = [4, 3, 2, 1].map((min, i) => gmailMsg({ messageId: `d0${i}`, threadId: 'loop', messageTimestamp: new Date(nowMs - min * MIN).toISOString(), sender: OWNER, subject: 'Re: ping' }));
+  const { write } = setup();
+  const cfg = write({ source: 'composio', allow: [OWNER], state: 'state.json', maxAgeMin: 3000, composio: { keyFile: 'key.txt' } });
+  let out = sink();
+  await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs, fetchImpl: fakeComposio(loop).fetchImpl });
+  assert.deepEqual(out.json().skipped, { 'thread-cap': 1 });
+  const next = fakeComposio(loop);
+  out = sink();
+  await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs + 25 * 60 * MIN, fetchImpl: next.fetchImpl });
+  assert.equal(next.calls.filter((c) => c.tool === 'GMAIL_REPLY_TO_THREAD').length, 0, 'the capped message does not resume the thread a day later');
+  assert.deepEqual(out.json().skipped, { already: 4 });
+});
+
+test('the texts say what --seed really covers on each transport', async () => {
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const seedRow = readme.split('\n').find((l) => l.startsWith('| `--seed`'));
+  assert.doesNotMatch(seedRow, /Not limited by `maxPerPass`, the allow-list or `maxAgeMin`/);
+  assert.match(seedRow, /Composio: only mail from allowed senders/);
+  assert.match(seedRow, /IMAP: any sender/);
+  const out = sink();
+  await run(['--help'], { stdout: out, env: {} });
+  assert.match(out.lines.join(''), /--seed +record every message one listing returns/);
+});
+
+test('a DMARC result for another domain refuses the sender whatever that result is', () => {
+  const top = (s) => [`mx.example.net; ${s}`];
+  const D = 'example.com';
+  assert.equal(authPassed(top('spf=pass smtp.mailfrom=example.com; dmarc=none header.from=example.net'), null, D), false);
+  assert.equal(authPassed(top('dkim=pass header.d=example.com; dmarc=temperror header.from=example.net'), null, D), false);
+  assert.equal(authPassed(top('dmarc=bestguesspass header.from=example.net; spf=pass smtp.mailfrom=example.com'), null, D), false);
+  assert.equal(authPassed(top('spf=pass smtp.mailfrom=example.com; dmarc=none header.from=example.com'), null, D), true, 'no policy, aligned SPF');
+  assert.equal(authPassed(top('dmarc=none header.from=example.com'), null, D), false, 'no policy and nothing aligned');
+});
+
+test('Composio: two From headers mean no sender; the summary field never stands in for them', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  assert.equal(gmailHeaders({ headers: [{ name: 'From', value: OWNER }, { name: 'from', value: 'attacker@example.net' }] }).from, '');
+  assert.equal(gmailHeaders({ headers: [{ name: 'From', value: OWNER }] }).from, OWNER);
+  const two = gmailMsg({ messageId: 'e01', threadId: 't1', messageTimestamp: new Date(nowMs - MIN).toISOString(), sender: OWNER, subject: 's' });
+  two.payload.headers.push({ name: 'From', value: 'attacker@example.net' });
+  const none = gmailMsg({ messageId: 'e02', threadId: 't2', messageTimestamp: new Date(nowMs - MIN).toISOString(), sender: OWNER, subject: 's' });
+  none.payload.headers = none.payload.headers.filter((h) => h.name !== 'From');
+  const net1 = fakeComposio([two, none]);
+  const { write } = setup();
+  const out = sink();
+  await run(['--config', write({ source: 'composio', allow: [OWNER], state: 'state.json', composio: { keyFile: 'key.txt' } }), '--send'], { stdout: out, env: {}, now: () => nowMs, fetchImpl: net1.fetchImpl });
+  assert.deepEqual(out.json().skipped, { 'not-allowed': 2 });
+  assert.equal(out.json().replied.length, 0);
+});
+
+test('Return-Path: only <> and mailer-daemon or postmaster are bounces; a mail service bounce address is not', () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const ctx = { allowed: makeAllow([OWNER]), ledger: {}, nowMs, maxAgeMin: 60, requireAuth: false };
+  const m = (returnPath) => ({ id: 'x', threadId: 't', from: OWNER, receivedAt: new Date(nowMs - MIN).toISOString(), headers: { returnPath } });
+  assert.equal(decide(m('<bounces+123-ab=example.com@em1.example.com>'), ctx).reply, true);
+  assert.equal(decide(m('<bounce-md_31.6f=owner@example.com>'), ctx).reply, true);
+  assert.equal(decide(m('<noreply@example.com>'), ctx).reply, true);
+  assert.equal(decide(m('<>'), ctx).reason, 'bounce');
+  assert.equal(decide(m('< >'), ctx).reason, 'bounce');
+  assert.equal(decide(m('<MAILER-DAEMON@mx.example.com>'), ctx).reason, 'bounce');
+  assert.equal(decide(m('postmaster@example.com'), ctx).reason, 'bounce');
 });

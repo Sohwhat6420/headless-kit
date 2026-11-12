@@ -82,7 +82,10 @@ export function gmailQuery(allow, windowDays = 2) {
 
 /**
  * The headers the loop guards need, from a Gmail payload ({headers: [{name, value}]}, top to bottom), in the
- * shape lib/imap.mjs returns. null when the message came back without a header list.
+ * shape lib/imap.mjs returns. null when the message came back without a header list. `from` is the value of the
+ * From header only when there is exactly one (as over IMAP); none or several give "", which is no sender.
+ * The value is whatever the Gmail API returned: if it decoded an RFC 2047 word in the display name, the decoded
+ * text reaches addressOf(), which still refuses a second bracketed address, a comma or a group.
  */
 export function gmailHeaders(payload) {
   const list = payload && Array.isArray(payload.headers) ? payload.headers : null;
@@ -92,7 +95,7 @@ export function gmailHeaders(payload) {
   return {
     autoSubmitted: first('auto-submitted'), precedence: first('precedence'), listId: first('list-id'),
     autoResponseSuppress: first('x-auto-response-suppress'), returnPath: first('return-path'),
-    authResults: all('authentication-results'), from: first('from'),
+    authResults: all('authentication-results'), from: all('from').length === 1 ? first('from') : '',
   };
 }
 
@@ -110,7 +113,8 @@ export function composioTransport({ client, allow, windowDays = 2, maxResults = 
         return {
           id: String(m.messageId || ''), threadId: m.threadId ? String(m.threadId) : null,
           receivedAt: m.messageTimestamp ? new Date(m.messageTimestamp).toISOString() : null,
-          from: headers?.from || String(m.sender || ''), subject: String(m.subject ?? m.preview?.subject ?? ''),
+          // With a header list, the From header is the only source; the summary field is used only without one.
+          from: headers ? headers.from : String(m.sender || ''), subject: String(m.subject ?? m.preview?.subject ?? ''),
           labels, sentByMailbox: labels.includes('SENT') || labels.includes('DRAFT'),
           headersKnown: Boolean(headers), headers: headers || {},
         };
