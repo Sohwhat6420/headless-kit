@@ -18,8 +18,13 @@ const b64 = (s) => Buffer.from(String(s).replace(/\r?\n/g, '\r\n'), 'utf8').toSt
 export function buildReply({ from, to, subject, body, html = null, inReplyTo, references, date = new Date(), messageId }) {
   for (const a of [from, to]) if (!ADDR.test(String(a))) throw new Error('SMTP: from and to must be bare addresses');
   const domain = String(from).split('@')[1];
-  const ref = oneLine(inReplyTo);
-  const refs = oneLine([references, ref].filter(Boolean).join(' ')).split(/\s+/).filter(Boolean).slice(-20).join(' ');
+  // Only whole message ids (<...@...>, at most 250 characters each) are copied. In-Reply-To is one id; References
+  // keeps the newest 20 and at most 900 characters, so the header stays inside one 998-character line.
+  const ids = (s) => oneLine(s).split(/\s+/).filter((t) => t.length <= 250 && /^<[^<>\s]+@[^<>\s]+>$/.test(t));
+  const ref = ids(inReplyTo)[0] || '';
+  const kept = [...ids(references).filter((t) => t !== ref), ...(ref ? [ref] : [])].slice(-20);
+  while (kept.join(' ').length > 900) kept.shift();
+  const refs = kept.join(' ');
   const headers = [
     `From: ${from}`, `To: ${to}`, `Subject: ${encodeHeader(oneLine(subject))}`, `Date: ${date.toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: ${messageId || `<${randomBytes(12).toString('hex')}@${domain}>`}`,
@@ -58,9 +63,18 @@ export async function sendMail({ host, port = 465, tls: useTls = true, user, pas
     }
   };
   sock.on('data', (d) => { buf += d.toString('latin1'); pump(); if (waiter && replies.length) { const w = waiter; waiter = null; w.ok(replies.shift()); } });
-  sock.on('error', (e) => { if (waiter) { const w = waiter; waiter = null; w.fail(e); } });
-  const next = () => new Promise((ok, fail) => { if (replies.length) return ok(replies.shift()); waiter = { ok, fail }; });
-  const expect = async (verb, re) => { const r = await next(); if (!re.test(r)) throw new Error(`SMTP ${verb}: ${r.slice(0, 120)}`); return r; };
+  // A socket that errors, times out or is closed by the server ends the wait: no step can hang.
+  let dead = null;
+  const end = (e) => { dead ??= e; if (waiter) { const w = waiter; waiter = null; w.fail(dead); } };
+  sock.on('error', end);
+  sock.on('close', () => end(new Error('connection closed')));
+  const next = () => new Promise((ok, fail) => { if (replies.length) return ok(replies.shift()); if (dead) return fail(dead); waiter = { ok, fail }; });
+  const expect = async (verb, re) => {
+    let r;
+    try { r = await next(); } catch (e) { throw new Error(`SMTP ${verb}: ${String(e.message).replace(/^SMTP: /, '').slice(0, 120)}`); }
+    if (!re.test(r)) throw new Error(`SMTP ${verb}: ${r.slice(0, 120)}`);
+    return r;
+  };
   const say = (line) => sock.write(`${line}\r\n`);
   try {
     await expect('greeting', /^220/);

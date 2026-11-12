@@ -18,13 +18,13 @@ git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/t
 cp examples/mail-reply.example.json mail-reply.json      # set allow, imap, smtp; passwordFile -> a file with your app password
 node mail-reply.mjs --config mail-reply.json             # dry run: lists what it WOULD reply to, sends nothing
 node mail-reply.mjs --config mail-reply.json --send --every 120   # reply for real, a pass every 2 minutes
-node --test                                              # 12 offline tests (mock IMAP and SMTP servers on 127.0.0.1)
+node --test                                              # 20 offline tests (mock IMAP and SMTP servers on 127.0.0.1)
 ```
 
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="12 of 12 tests pass: the dry run and one in-thread reply over mock IMAP and SMTP, a refused reply retried, a wrong password, seeding and the per-pass cap, plain TCP refused off loopback, Composio Connect and REST, allow-list matching, topmost-only authentication, skip reasons, header injection, the IMAP reader, and the structured template" width="100%">
+<img src="docs/test-run.svg" alt="20 of 20 tests pass: the dry run and one in-thread reply over mock IMAP and SMTP, a refused reply retried, a wrong password, seeding and the per-pass cap, plain TCP refused off loopback, Composio Connect and REST, allow-list matching, topmost-only authentication, skip reasons, header injection, the IMAP reader, the structured template, the Composio and IMAP loop guards, the IMAP search day, sender parsing, aligned authentication, seeding everything, quiet servers, and the threading header caps" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -40,7 +40,7 @@ node mail-reply.mjs --config FILE [--send] [--every SEC] [--seed] [--state FILE]
 | `--config FILE` | The JSON config (below). Env `MAIL_REPLY_CONFIG`. |
 | `--send` | Really send. Without it every pass is a dry run that reports what it would send. |
 | `--every SEC` | Keep going: a pass every SEC seconds (minimum 30), one JSON line each. Or run it once from cron or Task Scheduler. |
-| `--seed` | Record every message now due as answered, without replying (to start on a busy inbox). |
+| `--seed` | Record every message the mailbox returns now as answered, without replying (to start on a busy inbox). Not limited by `maxPerPass`, the allow-list or `maxAgeMin`; it covers what one listing returns (IMAP: the newest 100 since the day before the `maxAgeMin` cut-off; Composio: `maxResults` within `windowDays`). |
 | `--state FILE` | The ledger of answered message ids. Env `MAIL_REPLY_STATE`. |
 
 Environment overrides: `MAIL_REPLY_ALLOW` (comma list), `MAIL_REPLY_PASSWORD_FILE`, `MAIL_REPLY_COMPOSIO_KEY_FILE`.
@@ -53,14 +53,15 @@ See [`examples/mail-reply.example.json`](examples/mail-reply.example.json) (IMAP
 | --- | --- |
 | `source` | `imap` (default) or `composio`. |
 | `allow` | Senders who get a reply: exact addresses, or `@domain` for every address at exactly that domain (no subdomains). |
-| `self` | Addresses never answered (the mailbox's own addresses are added for you). |
+| `self` | Addresses never answered. Over IMAP + SMTP the mailbox's own addresses (`imap.user`, `smtp.from`) are added for you. With Composio the tool does not know the mailbox's address, so list it here; Gmail's `-from:me` search and the `SENT` label already keep the mailbox's own mail out. |
 | `maxAgeMin` | Only mail received in the last N minutes is answered (default 60). Raise it to catch up after downtime. |
 | `maxPerPass` | At most N replies per pass (default 10). |
+| `maxPerThread` | At most N replies in one thread in 24 hours (default 3). With Composio a thread is the Gmail thread; over IMAP each message counts as its own thread, so this never bites there. |
 | `template` / `templateFile` | The reply (below). A `.json` template file holds the structured form. |
 | `tzOffsetH` | Hours east of UTC for the times in the reply. |
 | `imap` | `host`, `port` (993), `user`, `passwordFile`, `mailbox` (`INBOX`), `requireAuth` (true), `authServId`, `markRead` (false). |
 | `smtp` | `host`, `port` (465, implicit TLS), `from`, and optionally its own `user` and `passwordFile` (default: the IMAP ones). |
-| `composio` | `keyFile`, `account`, `labelId` (a Gmail label to add), `markRead`, `windowDays` (2). |
+| `composio` | `keyFile`, `account`, `labelId` (a Gmail label to add), `markRead`, `windowDays` (2), `maxResults` (25), `requireHeaders` (true), `requireAuth` (true), `authServId` (`mx.google.com`). |
 
 ### The reply
 
@@ -77,8 +78,10 @@ word, and a small grey footer. Inline styles only, no tables, no images.
 ```
 
 Placeholders: `{date}` `{time}` `{zone}` (now), `{received}` (when the message arrived), `{subject}` and `{sender}`
-(one line, capped, HTML-escaped). Over IMAP + SMTP the reply carries `In-Reply-To`, `References`, `Re: <subject>`
-and `Auto-Submitted: auto-replied`. Through Composio it goes to `GMAIL_REPLY_TO_THREAD` (one body, so HTML only).
+(one line, capped, HTML-escaped). Over IMAP + SMTP the reply carries `In-Reply-To` (one message id), `References`
+(whole ids only, at most 20 and 900 characters), `Re: <subject>`, `Auto-Submitted: auto-replied` and
+`X-Auto-Response-Suppress: All`. Through Composio it goes to `GMAIL_REPLY_TO_THREAD` (one body, so HTML only); that
+tool takes no custom headers, so a Composio reply is **not** marked `Auto-Submitted` (see the next section).
 
 stdout is one JSON object per pass:
 
@@ -90,11 +93,34 @@ stdout is one JSON object per pass:
 
 ## What it will not answer
 
-Senders not on the allow-list; the mailbox itself; mail marked `Auto-Submitted` (other auto-replies, so two bots
-never ping-pong), `List-Id` or `Precedence: bulk/list`; mail older than `maxAgeMin` or dated in the future; anything
-already in the ledger; and, over IMAP with `requireAuth`, mail whose **topmost** `Authentication-Results` header
-(the one your own provider adds; set `authServId` to pin it) does not show `dmarc=pass` or both `spf=pass` and
-`dkim=pass`. A forged lower header is ignored.
+| Skipped as | What |
+| --- | --- |
+| `not-allowed` | The sender is not on the allow-list, or the `From` header does not hold exactly one address. |
+| `self` | The sender is in `self`; with Composio also anything carrying Gmail's `SENT` or `DRAFT` label (and the search itself asks for `-in:sent -in:draft -from:me`). |
+| `no-reply-sender` | The sender's local part is `mailer-daemon`, `postmaster`, `noreply`, `no-reply`, `do-not-reply` or `bounce(s)`, even when its domain is allowed. |
+| `auto-submitted` | `Auto-Submitted` is anything but `no` (another auto-reply). |
+| `auto-response-suppress` | `X-Auto-Response-Suppress` holds `All`, `OOF` or `AutoReply`. |
+| `bounce` | `Return-Path` is `<>` or a mailer-daemon address. |
+| `list-mail` | `List-Id`, or `Precedence: bulk`, `list` or `junk`. |
+| `no-headers` | Composio only: the message came back without its header list, so none of the checks above could run (`composio.requireHeaders`, default true). |
+| `too-old`, `future`, `no-date`, `no-thread` | Older than `maxAgeMin`, dated more than five minutes ahead, undated, or without a thread id. |
+| `unauthenticated` | With `requireAuth`: the **topmost** `Authentication-Results` header does not authenticate the sender's own domain (below). |
+| `thread-cap` | `maxPerThread` replies already went to this thread in the last 24 hours. |
+| `already` | The message is in the ledger. |
+| `over-max-per-pass` | `maxPerPass` replies were already sent this pass; it is answered on the next one. |
+
+**Authentication.** Only the topmost `Authentication-Results` header counts: your own provider adds it last, so a
+sender can forge only the ones below it. Set `authServId` to the name your provider writes there (matched whole;
+with Composio it defaults to `mx.google.com`), otherwise a provider that adds no such header leaves a forged one on
+top. The sender passes when that header shows `dmarc=pass` with `header.from` equal to the sender's domain (or its
+parent domain), or `spf=pass` whose `smtp.mailfrom` domain is aligned with it, or `dkim=pass` whose `header.d` or
+`header.i` domain is aligned with it. Aligned means the same domain or a subdomain of it. A `dmarc=fail`, a
+`dmarc=pass` for another domain, and passes that name no domain or an unrelated one are all refused.
+
+**Loops.** Over IMAP + SMTP the reply is marked `Auto-Submitted: auto-replied`, which every well-behaved responder
+(this tool included) refuses to answer. Through Composio the reply cannot carry that header, so there the guards are
+the checks on the incoming mail and `maxPerThread`: two responders that both ignore the headers stop after three
+replies in a thread.
 
 ## Exit codes
 
@@ -108,21 +134,27 @@ already in the ledger; and, over IMAP with `requireAuth`, mail whose **topmost**
 ## Security
 
 - **No model, no agent.** Nothing here calls an LLM. The text of an email is never interpreted: only the sender, subject, date and threading headers are read, and the reply is a fixed template.
-- **Replies only go to an allowed sender**, one per message, never to a Cc, a Reply-To or anyone else.
+- **Replies only go to an allowed sender**, one per message, never to a Cc, a Reply-To or anyone else. The sender is the single address of the `From` header, read from the undecoded header with quoted display names and comments removed, so an address written inside a display name is never used.
 - **Credentials stay in files.** The IMAP/SMTP password and the Composio key are read from files you name, sent only in the login or the request header, and redacted from every error; the tests check stdout for both. IMAP and SMTP use TLS; plain TCP is refused to anything but a loopback address.
 - **Mail text is data, never instructions** (OWASP LLM01). Subject and sender are flattened to one line before they reach the reply, and every header the tool writes has CR and LF removed, so mail cannot add headers or recipients.
 - **Safe by default.** Without `--send` it only reports. The ledger is written after each reply, so a crash cannot send the same acknowledgement twice.
 
 ## Status
 
-Tested (offline, 12 `node:test` cases, under 1 s on Windows 11 with Node 22) against a mock IMAP server and a mock
+Tested (offline, 20 `node:test` cases, about 1 s on Windows 11 with Node 22) against a mock IMAP server and a mock
 SMTP server on 127.0.0.1 and a fake Composio endpoint: dry run, one in-thread reply with the right threading
 headers, multipart/alternative with the structured template, the ledger, a refused recipient retried, a wrong
 password, seeding, the per-pass cap, every skip reason, allow-list matching, topmost-only authentication, header
-injection, RFC 2047 subjects, IMAP literals split across packets, Composio Connect (`ck_` key) and REST.
+injection, RFC 2047 subjects, IMAP literals split across packets, Composio Connect (`ck_` key) and REST, the loop
+guards on both transports (own mail, auto-replies, bounces, no-reply senders, the per-thread cap), the IMAP search
+day on a server west of UTC, sender parsing against display-name tricks, aligned authentication, seeding past the
+per-pass cap, a server that stops answering, and the caps on the threading headers.
 
 Not covered: real providers end to end in this repo's tests (the Composio Connect client is ported from one in daily
-use; IMAP + SMTP has only met the mock servers), STARTTLS on port 587 (use 465), OAuth2 IMAP login (use an app password),
+use; IMAP + SMTP has only met the mock servers). The Composio header list (`payload.headers`, asked for with
+`verbose: false` and `include_payload: true`) follows the tool's published schema and has not been run against a
+live mailbox here: if your account returns no headers, every message is skipped as `no-headers`, and
+`composio.requireHeaders: false` turns that check off at the cost of the header guards. Also not covered: STARTTLS on port 587 (use 465), OAuth2 IMAP login (use an app password),
 and Node 18 itself (only Node 22 was run).
 
 ## Licence

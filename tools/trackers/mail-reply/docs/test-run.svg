@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="981" height="394" viewBox="0 0 981 394" role="img" aria-label="mail-reply: node --test">
-<rect x="0.5" y="0.5" width="980" height="393" rx="10" fill="#0d1117" stroke="#30363d"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="534" viewBox="0 0 981 534" role="img" aria-label="mail-reply: node --test">
+<rect x="0.5" y="0.5" width="980" height="533" rx="10" fill="#0d1117" stroke="#30363d"/>
 <path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
 <circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
 <text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">mail-reply: node --test</text>
@@ -17,8 +17,16 @@
 <text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> template and headers: mail text cannot add lines or headers</text>
 <text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> IMAP reader: literals split across chunks; ledger trims oldest first; settings validate</text>
 <text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> structured template: bold headline, at most three bold-lead lines, grey footer; mail text is escaped</text>
-<text x="20" y="326" xml:space="preserve">ℹ tests 12</text>
-<text x="20" y="346" xml:space="preserve">ℹ pass 12</text>
-<text x="20" y="366" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> Composio never answers itself or another auto-reply, and a thread cannot ping-pong</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> IMAP skips X-Auto-Response-Suppress, mailer-daemon, no-reply senders and a null Return-Path</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> IMAP SINCE reaches back a day, so a server west of UTC still returns the last hour</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> the sender is the one real addr-spec: a display name, comment or encoded word cannot stand in for it</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> authentication must be aligned with the From domain</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --seed records every message it can see, past maxPerPass and whoever sent it, and sends nothing</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a server that goes quiet cannot hang a pass (IMAP LOGOUT, SMTP mid-dialogue)</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> In-Reply-To is one message id; References keeps whole ids and stays inside one header line</text>
+<text x="20" y="486" xml:space="preserve">ℹ tests 20</text>
+<text x="20" y="506" xml:space="preserve">ℹ pass 20</text>
+<text x="20" y="526" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
 </g>
 </svg>

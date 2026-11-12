@@ -8,7 +8,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { run, settings, decide, makeAllow, addressOf, authPassed, render, renderReply, checkTemplate, DEFAULT_TEMPLATE, replySubject, trimLedger } from '../mail-reply.mjs';
 import { ResponseReader, decodeWords, imapDate, openImap } from '../lib/imap.mjs';
-import { buildReply, encodeHeader } from '../lib/smtp.mjs';
+import { buildReply, encodeHeader, sendMail } from '../lib/smtp.mjs';
+import { gmailQuery } from '../lib/composio.mjs';
 
 const PASSWORD = 'example-app-password-7c4a8d09';
 const KEY = 'ck_example_key_5f4dcc3b5aa765d6';
@@ -23,7 +24,7 @@ const internalDate = (ms) => {
   return `${p(d.getUTCDate())}-${imapDate(ms).split('-')[1]}-${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())} +0000`;
 };
 
-function mockImap(messages, { password = PASSWORD } = {}) {
+function mockImap(messages, { password = PASSWORD, zoneOffsetH = null, ignoreLogout = false } = {}) {
   const log = { logins: 0, stores: [], commands: [] };
   const server = net.createServer((sock) => {
     sock.write('* OK mock IMAP ready\r\n');
@@ -41,7 +42,16 @@ function mockImap(messages, { password = PASSWORD } = {}) {
           const ok = cmd === `LOGIN "${BOT}" "${password}"`;
           sock.write(ok ? `${tag} OK logged in\r\n` : `${tag} NO [AUTHENTICATIONFAILED] Invalid credentials\r\n`);
         } else if (/^(EXAMINE|SELECT) /i.test(cmd)) sock.write(`* ${messages.length} EXISTS\r\n${tag} OK [READ-WRITE] done\r\n`);
-        else if (/^UID SEARCH /i.test(cmd)) sock.write(`* SEARCH ${messages.map((m) => m.uid).join(' ')}\r\n${tag} OK search done\r\n`);
+        else if (/^UID SEARCH /i.test(cmd)) {
+          // With zoneOffsetH the mock honours SINCE as a real server does: by the date part of its own local INTERNALDATE.
+          let hit = messages;
+          const since = /SINCE (\d{1,2})-(\w{3})-(\d{4})/i.exec(cmd);
+          if (zoneOffsetH !== null && since) {
+            const day = Date.parse(`${since[2]} ${since[1]} ${since[3]} 00:00:00 UTC`);
+            hit = messages.filter((m) => Math.floor((m.at + zoneOffsetH * 3_600_000) / 86_400_000) * 86_400_000 >= day);
+          }
+          sock.write(`* SEARCH ${hit.map((m) => m.uid).join(' ')}\r\n${tag} OK search done\r\n`);
+        }
         else if (/^UID FETCH /i.test(cmd)) {
           const want = cmd.split(' ')[2].split(',').map(Number);
           for (const [n, m] of messages.entries()) {
@@ -53,7 +63,7 @@ function mockImap(messages, { password = PASSWORD } = {}) {
           }
           sock.write(`${tag} OK fetch done\r\n`);
         } else if (/^UID STORE /i.test(cmd)) { log.stores.push(cmd); sock.write(`${tag} OK store done\r\n`); }
-        else if (/^LOGOUT/i.test(cmd)) { sock.write(`* BYE\r\n${tag} OK bye\r\n`); sock.end(); }
+        else if (/^LOGOUT/i.test(cmd)) { if (!ignoreLogout) { sock.write(`* BYE\r\n${tag} OK bye\r\n`); sock.end(); } }
         else sock.write(`${tag} BAD unknown\r\n`);
       }
     });
@@ -62,7 +72,7 @@ function mockImap(messages, { password = PASSWORD } = {}) {
   return new Promise((ok) => server.listen(0, '127.0.0.1', () => ok({ port: server.address().port, log, close: () => new Promise((r) => server.close(r)) })));
 }
 
-function mockSmtp({ failRcpt = false } = {}) {
+function mockSmtp({ failRcpt = false, dropAtMailFrom = false } = {}) {
   const sent = [];
   const server = net.createServer((sock) => {
     sock.write('220 mock SMTP\r\n');
@@ -83,6 +93,7 @@ function mockSmtp({ failRcpt = false } = {}) {
         const line = buf.slice(0, i); buf = buf.slice(i + 2);
         if (/^EHLO/i.test(line)) sock.write('250-mock\r\n250 AUTH PLAIN\r\n');
         else if (/^AUTH PLAIN /i.test(line)) { env.auth = Buffer.from(line.slice(11), 'base64').toString('utf8'); sock.write('235 ok\r\n'); }
+        else if (/^MAIL FROM:/i.test(line) && dropAtMailFrom) { sock.end(); return; }
         else if (/^MAIL FROM:/i.test(line)) { env.from = line.slice(10); sock.write('250 ok\r\n'); }
         else if (/^RCPT TO:/i.test(line)) { env.to = line.slice(8); sock.write(failRcpt ? '550 no such user\r\n' : '250 ok\r\n'); }
         else if (/^DATA/i.test(line)) { data = ''; sock.write('354 go ahead\r\n'); }
@@ -248,11 +259,18 @@ function fakeComposio(messages, { failReply = false } = {}) {
   return { fetchImpl, calls };
 }
 
+const GMAIL_AUTH = 'mx.google.com; dkim=pass header.i=@example.com; spf=pass smtp.mailfrom=owner@example.com; dmarc=pass (p=NONE) header.from=example.com';
+/** A message as GMAIL_FETCH_EMAILS returns it with include_payload: the header list is payload.headers. */
+const gmailMsg = (o, headers = {}) => ({
+  labelIds: ['INBOX', 'UNREAD'], ...o,
+  payload: { headers: Object.entries({ From: o.sender, 'Authentication-Results': GMAIL_AUTH, ...headers }).map(([name, value]) => ({ name, value })) },
+});
+
 test('Composio Connect (ck_ key): lists mail from the allow-list, replies in the thread to the sender, labels it', async () => {
   const nowMs = Date.parse('2026-11-12T10:00:00Z');
   const msgs = [
-    { messageId: 'a1b2c3', threadId: 't1', messageTimestamp: new Date(nowMs - 2 * MIN).toISOString(), sender: `Owner <${OWNER}>`, subject: 'note this' },
-    { messageId: 'd4e5f6', threadId: 't2', messageTimestamp: new Date(nowMs - 2 * MIN).toISOString(), sender: 'x@evil-example.com', subject: 'not allowed' },
+    gmailMsg({ messageId: 'a1b2c3', threadId: 't1', messageTimestamp: new Date(nowMs - 2 * MIN).toISOString(), sender: `Owner <${OWNER}>`, subject: 'note this' }),
+    gmailMsg({ messageId: 'd4e5f6', threadId: 't2', messageTimestamp: new Date(nowMs - 2 * MIN).toISOString(), sender: 'x@evil-example.com', subject: 'not allowed' }),
   ];
   const net1 = fakeComposio(msgs);
   const { write } = setup();
@@ -263,7 +281,8 @@ test('Composio Connect (ck_ key): lists mail from the allow-list, replies in the
   assert.equal(out.json().skipped['not-allowed'], 1);
   const tools = net1.calls.filter((c) => c.tool);
   assert.deepEqual(tools.map((c) => c.tool), ['GMAIL_FETCH_EMAILS', 'GMAIL_REPLY_TO_THREAD', 'GMAIL_ADD_LABEL_TO_EMAIL']);
-  assert.equal(tools[0].args.query, `from:(${OWNER}) newer_than:2d`);
+  assert.equal(tools[0].args.query, `from:(${OWNER}) newer_than:2d -in:sent -in:draft -from:me`);
+  assert.equal(tools[0].args.include_payload, true, 'the headers are asked for');
   assert.equal(tools[1].args.thread_id, 't1');
   assert.equal(tools[1].args.recipient_email, OWNER);
   assert.equal(tools[1].args.is_html, true, 'the default template is sent as HTML');
@@ -276,7 +295,7 @@ test('Composio Connect (ck_ key): lists mail from the allow-list, replies in the
 
 test('Composio: an error that echoes the key is redacted; a project key goes to the REST API', async () => {
   const nowMs = Date.parse('2026-11-12T10:00:00Z');
-  const msgs = [{ messageId: 'a1b2c3', threadId: 't1', messageTimestamp: new Date(nowMs - MIN).toISOString(), sender: OWNER, subject: 's' }];
+  const msgs = [gmailMsg({ messageId: 'a1b2c3', threadId: 't1', messageTimestamp: new Date(nowMs - MIN).toISOString(), sender: OWNER, subject: 's' })];
   const bad = fakeComposio(msgs, { failReply: true });
   const { d, write } = setup();
   const cfg = write({ source: 'composio', allow: [OWNER], state: 'state.json', composio: { keyFile: 'key.txt' } });
@@ -308,12 +327,14 @@ test('allow-list: exact addresses and exact domains only; display names are not 
 });
 
 test('authentication: only the topmost Authentication-Results counts', () => {
-  assert.equal(authPassed([AUTH_PASS.slice(24)]), true);
-  assert.equal(authPassed([AUTH_FAIL.slice(24), AUTH_PASS.slice(24)]), false, 'a forged lower header is ignored');
-  assert.equal(authPassed(['mx.example.net; spf=pass; dkim=pass']), true);
-  assert.equal(authPassed(['mx.example.net; spf=pass; dkim=fail']), false);
-  assert.equal(authPassed([AUTH_PASS.slice(24)], 'mx.other.net'), false, 'authServId pins the server');
-  assert.equal(authPassed([]), false);
+  const D = 'example.com';
+  assert.equal(authPassed([AUTH_PASS.slice(24)], null, D), true);
+  assert.equal(authPassed([AUTH_FAIL.slice(24), AUTH_PASS.slice(24)], null, D), false, 'a forged lower header is ignored');
+  assert.equal(authPassed(['mx.example.net; spf=pass; dkim=fail'], null, D), false);
+  assert.equal(authPassed([AUTH_PASS.slice(24)], 'mx.other.net', D), false, 'authServId pins the server');
+  assert.equal(authPassed([AUTH_PASS.slice(24)], 'MX.example.net', D), true);
+  assert.equal(authPassed([AUTH_PASS.slice(24)], 'mx.example', D), false, 'the authserv-id is matched whole, not as a prefix');
+  assert.equal(authPassed([], null, D), false);
 });
 
 test('decide: future, undated and threadless mail is skipped; self is never answered', () => {
@@ -374,4 +395,182 @@ test('structured template: bold headline, at most three bold-lead lines, grey fo
   assert.throws(() => checkTemplate({ headline: 'h', lines: [1, 2, 3, 4].map(() => ({ text: 'x' })) }), /at most 3/);
   assert.throws(() => checkTemplate({ lines: [] }), /headline/);
   assert.throws(() => checkTemplate('  '), /empty/);
+});
+
+// ------------------------------------------------------------------------------------------- loop guards
+
+test('Composio never answers itself or another auto-reply, and a thread cannot ping-pong', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const at = (min) => new Date(nowMs - min * MIN).toISOString();
+  assert.equal(gmailQuery(['@example.com', OWNER]), `from:(example.com OR ${OWNER}) newer_than:2d -in:sent -in:draft -from:me`);
+  const msgs = [
+    gmailMsg({ messageId: 'a01', threadId: 't1', messageTimestamp: at(9), sender: OWNER, subject: 'own copy', labelIds: ['SENT'] }),
+    gmailMsg({ messageId: 'a02', threadId: 't2', messageTimestamp: at(9), sender: `Me <${BOT}>`, subject: 'from the mailbox itself' }),
+    gmailMsg({ messageId: 'a03', threadId: 't3', messageTimestamp: at(9), sender: OWNER, subject: 'out of office' }, { 'Auto-Submitted': 'auto-replied' }),
+    gmailMsg({ messageId: 'a04', threadId: 't4', messageTimestamp: at(9), sender: OWNER, subject: 'suppressed' }, { 'X-Auto-Response-Suppress': 'DR, OOF, AutoReply' }),
+    gmailMsg({ messageId: 'a05', threadId: 't5', messageTimestamp: at(9), sender: 'MAILER-DAEMON@example.com', subject: 'Undelivered' }),
+    gmailMsg({ messageId: 'a06', threadId: 't6', messageTimestamp: at(9), sender: 'Shop <no-reply@example.com>', subject: 'receipt' }),
+    gmailMsg({ messageId: 'a07', threadId: 't7', messageTimestamp: at(9), sender: OWNER, subject: 'bounce' }, { 'Return-Path': '<>' }),
+    gmailMsg({ messageId: 'a08', threadId: 't8', messageTimestamp: at(9), sender: OWNER, subject: 'list' }, { 'List-Id': '<l.example.com>' }),
+    { messageId: 'a09', threadId: 't9', messageTimestamp: at(9), sender: OWNER, subject: 'no headers came back', labelIds: ['INBOX'] },
+    gmailMsg({ messageId: 'a10', threadId: 't10', messageTimestamp: at(9), sender: OWNER, subject: 'spoofed' }, { 'Authentication-Results': 'mx.google.com; spf=fail smtp.mailfrom=example.com; dmarc=fail header.from=example.com' }),
+    ...[8, 7, 6, 5, 4].map((min, i) => gmailMsg({ messageId: `b0${i}`, threadId: 'loop', messageTimestamp: at(min), sender: OWNER, subject: 'Re: ping' })),
+  ];
+  const net1 = fakeComposio(msgs);
+  const { write } = setup();
+  const cfg = write({ source: 'composio', allow: ['@example.com', BOT], self: [BOT], state: 'state.json', composio: { keyFile: 'key.txt' } });
+  let out = sink();
+  assert.equal(await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs, fetchImpl: net1.fetchImpl }), 0);
+  let r = out.json();
+  assert.deepEqual(r.replied.map((x) => x.id), ['b00', 'b01', 'b02'], 'at most three acknowledgements in one thread in a day');
+  assert.deepEqual(r.skipped, { self: 2, 'auto-submitted': 1, 'auto-response-suppress': 1, 'no-reply-sender': 2, bounce: 1, 'list-mail': 1, 'no-headers': 1, unauthenticated: 1, 'thread-cap': 2 });
+  assert.equal(net1.calls.filter((c) => c.tool === 'GMAIL_REPLY_TO_THREAD').length, 3);
+  // a later pass: the thread stays capped
+  const net2 = fakeComposio([gmailMsg({ messageId: 'b09', threadId: 'loop', messageTimestamp: at(-30), sender: OWNER, subject: 'Re: ping' })]);
+  out = sink();
+  await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs + 31 * MIN, fetchImpl: net2.fetchImpl });
+  assert.deepEqual(out.json().skipped, { 'thread-cap': 1 });
+  assert.equal(net2.calls.filter((c) => c.tool === 'GMAIL_REPLY_TO_THREAD').length, 0);
+  // a day later the thread is answered again
+  const later = nowMs + 25 * 60 * MIN;
+  const net3 = fakeComposio([gmailMsg({ messageId: 'b10', threadId: 'loop', messageTimestamp: new Date(later).toISOString(), sender: OWNER, subject: 'Re: ping' })]);
+  out = sink();
+  await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => later + MIN, fetchImpl: net3.fetchImpl });
+  assert.equal(out.json().replied.length, 1);
+});
+
+test('IMAP skips X-Auto-Response-Suppress, mailer-daemon, no-reply senders and a null Return-Path', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const h = (n, from, ...extra) => ({ uid: n, at: nowMs - n * MIN, headers: [`From: ${from}`, `Subject: s${n}`, `Message-ID: <g${n}@example.com>`, AUTH_PASS, ...extra] });
+  const imap = await mockImap([
+    h(1, OWNER, 'X-Auto-Response-Suppress: All'),
+    h(2, 'Mail Delivery Subsystem <mailer-daemon@example.com>'),
+    h(3, 'noreply@example.com'),
+    h(4, 'do-not-reply+abc@example.com'),
+    h(5, OWNER, 'Return-Path: <>'),
+    h(6, OWNER, 'Return-Path: <owner@example.com>', 'X-Auto-Response-Suppress: None'),
+  ]);
+  const smtp = await mockSmtp();
+  try {
+    const { write } = setup();
+    const cfg = write({ source: 'imap', allow: ['@example.com'], state: 'state.json', imap: { host: '127.0.0.1', port: imap.port, tls: false, user: BOT, passwordFile: 'pw.txt' }, smtp: { host: '127.0.0.1', port: smtp.port, tls: false } });
+    const out = sink();
+    await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs });
+    assert.deepEqual(out.json().replied.map((x) => x.id), ['<g6@example.com>']);
+    assert.deepEqual(out.json().skipped, { 'auto-response-suppress': 1, 'no-reply-sender': 3, bounce: 1 });
+    assert.match(smtp.sent[0].data, /^X-Auto-Response-Suppress: All$/m);
+    assert.ok(imap.log.commands.some((c) => /^UID FETCH .*RETURN-PATH/.test(c)), 'Return-Path is fetched');
+  } finally { await imap.close(); await smtp.close(); }
+});
+
+test('IMAP SINCE reaches back a day, so a server west of UTC still returns the last hour', async () => {
+  const nowMs = Date.parse('2026-11-12T01:30:00Z');   // 11 Nov 17:30 on a UTC-8 server
+  const mail = (uid, min, id) => ({ uid, at: nowMs - min * MIN, headers: [`From: ${OWNER}`, 'Subject: s', `Message-ID: <${id}@example.com>`, AUTH_PASS] });
+  const imap = await mockImap([mail(1, 10, 'z1'), mail(2, 180, 'z2')], { zoneOffsetH: -8 });
+  const smtp = await mockSmtp();
+  try {
+    const { write } = setup();
+    const cfg = write({ source: 'imap', allow: [OWNER], maxAgeMin: 60, state: 'state.json', imap: { host: '127.0.0.1', port: imap.port, tls: false, user: BOT, passwordFile: 'pw.txt' }, smtp: { host: '127.0.0.1', port: smtp.port, tls: false } });
+    const out = sink();
+    await run(['--config', cfg, '--send'], { stdout: out, env: {}, now: () => nowMs });
+    assert.ok(imap.log.commands.includes('UID SEARCH SINCE 11-Nov-2026'), 'one day before the UTC date of the cut-off');
+    assert.deepEqual(out.json().replied.map((x) => x.id), ['<z1@example.com>']);
+    assert.deepEqual(out.json().skipped, { 'too-old': 1 }, 'the exact cut-off is still applied here, by the minute');
+  } finally { await imap.close(); await smtp.close(); }
+});
+
+// ------------------------------------------------------------------------------------------- sender and authentication
+
+test('the sender is the one real addr-spec: a display name, comment or encoded word cannot stand in for it', () => {
+  assert.equal(addressOf(`"Boss <${OWNER}>" <attacker@example.net>`), 'attacker@example.net', 'brackets inside a quoted display name');
+  assert.equal(addressOf(`"a \\" <${OWNER}>" <attacker@example.net>`), 'attacker@example.net', 'an escaped quote');
+  assert.equal(addressOf(`(<${OWNER}>) attacker@example.net`), 'attacker@example.net', 'a comment');
+  assert.equal(addressOf(`<${OWNER}> <attacker@example.net>`), '', 'two bracketed addresses: no sender');
+  assert.equal(addressOf(`${OWNER}, attacker@example.net`), '', 'two authors: no sender');
+  assert.equal(addressOf(`<${OWNER}> attacker@example.net`), '', 'text after the address');
+  assert.equal(addressOf(`${OWNER} <attacker@example.net>`), 'attacker@example.net');
+  assert.equal(addressOf('=?UTF-8?B?PG93bmVyQGV4YW1wbGUuY29tPg==?= <attacker@example.net>'), 'attacker@example.net', 'an encoded word is never decoded into an address');
+  assert.equal(addressOf(`Owner <${OWNER}>`), OWNER);
+  assert.equal(addressOf(`  ${OWNER.toUpperCase()}  `), OWNER);
+  assert.equal(addressOf('"quoted local"@example.com'), '');
+});
+
+test('authentication must be aligned with the From domain', () => {
+  const top = (s) => [`mx.example.net; ${s}`];
+  const D = 'example.com';
+  assert.equal(authPassed(top('dmarc=pass header.from=example.com'), null, D), true);
+  assert.equal(authPassed(top('dmarc=pass (p=REJECT) header.from=example.com'), null, 'mail.example.com'), true, 'the organisational domain covers a subdomain');
+  assert.equal(authPassed(top('dmarc=pass header.from=example.net'), null, D), false, 'DMARC passed for another domain');
+  assert.equal(authPassed(top('dmarc=pass header.from=evil-example.com'), null, D), false);
+  assert.equal(authPassed(top('dmarc=pass'), null, D), false, 'no header.from: nothing ties the pass to the sender');
+  assert.equal(authPassed(top('spf=pass smtp.mailfrom=attacker@example.net; dkim=pass header.d=example.net'), null, D), false, 'unaligned SPF and DKIM passes');
+  assert.equal(authPassed(top('spf=pass; dkim=pass'), null, D), false, 'passes that name no domain');
+  assert.equal(authPassed(top('spf=pass smtp.mailfrom=bounce@example.com'), null, D), true, 'aligned SPF');
+  assert.equal(authPassed(top('spf=fail smtp.mailfrom=example.com; dkim=pass header.i=@example.com'), null, D), true, 'aligned DKIM');
+  assert.equal(authPassed(top('dkim=pass header.d=example.com; dmarc=fail header.from=example.com'), null, D), false, 'a DMARC fail is final');
+  assert.equal(authPassed(top('dkim=pass (header.d=example.com) header.d=example.net'), null, D), false, 'comments are not results');
+  assert.equal(authPassed(top('dkim=pass header.d=com'), null, D), false, 'a bare TLD is not alignment');
+  assert.equal(authPassed(top('spf=pass smtp.mailfrom="a; dkim=pass header.d=example.com x"@example.net'), null, D), false, 'a quoted local part cannot add a result');
+  assert.equal(authPassed(top('dkim=pass header.d=example.net header.d=example.com'), null, D), false, 'the first value of a property counts');
+  assert.equal(authPassed(top('dmarc=pass header.from=example.com'), null, ''), false);
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const ctx = { allowed: makeAllow([OWNER]), ledger: {}, nowMs, maxAgeMin: 60, requireAuth: true, authKnown: true };
+  const msg = { id: 'x', threadId: 't', from: `"<${OWNER}>" <attacker@example.net>`, receivedAt: new Date(nowMs - MIN).toISOString(), headers: { authResults: ['mx.example.net; dmarc=pass header.from=example.net'] } };
+  assert.equal(decide(msg, ctx).reason, 'not-allowed');
+  assert.equal(decide({ ...msg, from: OWNER }, ctx).reason, 'unauthenticated');
+});
+
+// ------------------------------------------------------------------------------------------- seeding, timeouts, header caps
+
+test('--seed records every message it can see, past maxPerPass and whoever sent it, and sends nothing', async () => {
+  const nowMs = Date.parse('2026-11-12T10:00:00Z');
+  const many = [1, 2, 3, 4, 5].map((n) => ({ uid: n, at: nowMs - n * MIN, headers: [`From: ${OWNER}`, `Subject: s${n}`, `Message-ID: <q${n}@example.com>`, AUTH_PASS] }));
+  many.push({ uid: 6, at: nowMs - 300 * MIN, headers: [`From: ${OWNER}`, 'Subject: old', 'Message-ID: <q6@example.com>', AUTH_PASS] });
+  many.push({ uid: 7, at: nowMs - 6 * MIN, headers: ['From: someone@example.org', 'Subject: stranger', 'Message-ID: <q7@example.org>', AUTH_PASS] });
+  const imap = await mockImap(many);
+  const smtp = await mockSmtp();
+  try {
+    const { d, write } = setup();
+    const cfg = { source: 'imap', allow: [OWNER], state: 'state.json', maxPerPass: 2, imap: { host: '127.0.0.1', port: imap.port, tls: false, user: BOT, passwordFile: 'pw.txt' }, smtp: { host: '127.0.0.1', port: smtp.port, tls: false } };
+    let out = sink();
+    assert.equal(await run(['--config', write(cfg), '--seed'], { stdout: out, env: {}, now: () => nowMs }), 0);
+    assert.equal(out.json().seeded, true);
+    assert.equal(out.json().replied.length, 7);
+    assert.ok(out.json().replied.every((x) => x.seeded === true));
+    assert.equal(out.json().skipped['over-max-per-pass'], undefined);
+    assert.equal(Object.keys(JSON.parse(readFileSync(join(d, 'state.json'), 'utf8')).replied).length, 7);
+    out = sink();
+    await run(['--config', write({ ...cfg, maxAgeMin: 600, maxPerPass: 10 }), '--send'], { stdout: out, env: {}, now: () => nowMs });
+    assert.equal(out.json().replied.length, 0, 'nothing seeded is answered later, even with a wider window');
+    assert.equal(out.json().skipped.already, 7);
+    assert.equal(smtp.sent.length, 0);
+  } finally { await imap.close(); await smtp.close(); }
+});
+
+test('a server that goes quiet cannot hang a pass (IMAP LOGOUT, SMTP mid-dialogue)', { timeout: 60_000 }, async () => {
+  const imap = await mockImap([], { ignoreLogout: true });
+  const smtp = await mockSmtp({ dropAtMailFrom: true });
+  try {
+    const session = await openImap({ host: '127.0.0.1', port: imap.port, tls: false, closeTimeoutMs: 200 });
+    const t0 = Date.now();
+    await session.close();
+    assert.ok(Date.now() - t0 < 5000, `close took ${Date.now() - t0} ms`);
+    const sending = sendMail({ host: '127.0.0.1', port: smtp.port, tls: false, from: BOT, to: OWNER, message: 'Subject: x\r\n\r\nb\r\n' });
+    const res = await Promise.race([sending.then(() => 'sent', (e) => e.message), new Promise((r) => { setTimeout(() => r('hung'), 5000); })]);
+    assert.match(res, /SMTP MAIL FROM: connection closed/);
+  } finally { await imap.close(); await smtp.close(); }
+});
+
+test('In-Reply-To is one message id; References keeps whole ids and stays inside one header line', () => {
+  const id = (n) => `<${String(n).padStart(4, '0')}${'x'.repeat(60)}@example.com>`;
+  const many = Array.from({ length: 40 }, (_, i) => id(i)).join(' ');
+  const head = buildReply({ from: BOT, to: OWNER, subject: 's', body: 'b', inReplyTo: `${id(99)} <second@example.com> junk`, references: `${many} not-an-id <${'y'.repeat(2000)}@example.com>` }).split('\r\n\r\n')[0];
+  const line = (k) => head.split('\r\n').find((l) => l.startsWith(`${k}: `));
+  assert.equal(line('In-Reply-To'), `In-Reply-To: ${id(99)}`);
+  const refs = line('References').slice(12).split(' ');
+  assert.ok(line('References').length <= 998, `References is ${line('References').length} characters`);
+  assert.ok(refs.every((r) => /^<[^<>\s]+@[^<>\s]+>$/.test(r)), 'only whole message ids');
+  assert.equal(refs.at(-1), id(99), 'the message being answered is last');
+  assert.ok(!head.includes('y'.repeat(300)));
+  assert.equal(buildReply({ from: BOT, to: OWNER, subject: 's', body: 'b', inReplyTo: 'garbage' }).includes('In-Reply-To'), false);
 });

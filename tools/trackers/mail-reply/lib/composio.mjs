@@ -71,26 +71,53 @@ export function composioClient({ readKey, account = null, connectUrl = CONNECT_U
   };
 }
 
-/** Gmail search for mail from the allowed senders in the last `windowDays` days. */
+/**
+ * Gmail search for mail from the allowed senders in the last `windowDays` days. Mail the mailbox itself sent
+ * (its own replies sit in the same threads) and drafts are excluded in the query.
+ */
 export function gmailQuery(allow, windowDays = 2) {
   const terms = allow.map((a) => (a.startsWith('@') ? a.slice(1) : a));
-  return `from:(${terms.join(' OR ')}) newer_than:${windowDays}d`;
+  return `from:(${terms.join(' OR ')}) newer_than:${windowDays}d -in:sent -in:draft -from:me`;
+}
+
+/**
+ * The headers the loop guards need, from a Gmail payload ({headers: [{name, value}]}, top to bottom), in the
+ * shape lib/imap.mjs returns. null when the message came back without a header list.
+ */
+export function gmailHeaders(payload) {
+  const list = payload && Array.isArray(payload.headers) ? payload.headers : null;
+  if (!list || !list.length) return null;
+  const all = (k) => list.filter((h) => h && String(h.name).toLowerCase() === k).map((h) => String(h.value ?? '').replace(/\s*\r?\n\s*/g, ' ').trim());
+  const first = (k) => all(k)[0] || '';
+  return {
+    autoSubmitted: first('auto-submitted'), precedence: first('precedence'), listId: first('list-id'),
+    autoResponseSuppress: first('x-auto-response-suppress'), returnPath: first('return-path'),
+    authResults: all('authentication-results'), from: first('from'),
+  };
 }
 
 /** The transport the tracker uses: list() -> messages, reply(msg, body), mark(msg). */
 export function composioTransport({ client, allow, windowDays = 2, maxResults = 25, labelId = null, markRead = false }) {
   return {
     name: 'composio',
-    authKnown: false,   // GMAIL_FETCH_EMAILS without the payload carries no Authentication-Results
     async list() {
-      const data = await client.execute('GMAIL_FETCH_EMAILS', { query: gmailQuery(allow, windowDays), max_results: maxResults, verbose: false, include_payload: false });
-      return (data.messages || []).map((m) => ({
-        id: String(m.messageId || ''), threadId: m.threadId ? String(m.threadId) : null,
-        receivedAt: m.messageTimestamp ? new Date(m.messageTimestamp).toISOString() : null,
-        from: String(m.sender || ''), subject: String(m.subject ?? m.preview?.subject ?? ''),
-        labels: Array.isArray(m.labelIds) ? m.labelIds : [], headers: {},
-      })).filter((m) => m.id);
+      // verbose false + include_payload true: the header list without the body. A message that still comes back
+      // without headers is marked headersKnown: false and is not answered (composio.requireHeaders).
+      const data = await client.execute('GMAIL_FETCH_EMAILS', { query: gmailQuery(allow, windowDays), max_results: maxResults, verbose: false, include_payload: true });
+      return (data.messages || []).map((m) => {
+        const headers = gmailHeaders(m.payload);
+        const labels = Array.isArray(m.labelIds) ? m.labelIds.map(String) : [];
+        return {
+          id: String(m.messageId || ''), threadId: m.threadId ? String(m.threadId) : null,
+          receivedAt: m.messageTimestamp ? new Date(m.messageTimestamp).toISOString() : null,
+          from: headers?.from || String(m.sender || ''), subject: String(m.subject ?? m.preview?.subject ?? ''),
+          labels, sentByMailbox: labels.includes('SENT') || labels.includes('DRAFT'),
+          headersKnown: Boolean(headers), headers: headers || {},
+        };
+      }).filter((m) => m.id);
     },
+    // GMAIL_REPLY_TO_THREAD takes no custom headers, so this reply cannot carry Auto-Submitted (the SMTP path
+    // does). The per-thread cap in decide() is what stops two such responders answering each other for ever.
     async reply(msg, { to, body, html = null }) {   // the tool takes one body: the HTML when there is one
       return client.execute('GMAIL_REPLY_TO_THREAD', { thread_id: msg.threadId, recipient_email: to, message_body: html || body, is_html: Boolean(html), include_signature: false });
     },

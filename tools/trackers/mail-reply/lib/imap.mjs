@@ -4,7 +4,7 @@
 import net from 'node:net';
 import tls from 'node:tls';
 
-export const HEADER_FIELDS = ['FROM', 'SUBJECT', 'MESSAGE-ID', 'REFERENCES', 'IN-REPLY-TO', 'AUTO-SUBMITTED', 'AUTHENTICATION-RESULTS', 'LIST-ID', 'PRECEDENCE', 'X-AUTO-RESPONSE-SUPPRESS'];
+export const HEADER_FIELDS = ['FROM', 'SUBJECT', 'MESSAGE-ID', 'REFERENCES', 'IN-REPLY-TO', 'AUTO-SUBMITTED', 'AUTHENTICATION-RESULTS', 'LIST-ID', 'PRECEDENCE', 'X-AUTO-RESPONSE-SUPPRESS', 'RETURN-PATH'];
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -87,7 +87,13 @@ export async function openImap(opts) {
     waiting = { tag, got: [], ok, fail, verb: text.split(' ').slice(0, text.startsWith('UID') ? 2 : 1).join(' ') };
     sock.write(`${tag} ${text}\r\n`);
   });
-  return { cmd, close: async () => { try { await cmd('LOGOUT'); } catch { /* closing anyway */ } sock.destroy(); } };
+  // LOGOUT gets closeTimeoutMs to be answered; a server that has gone quiet cannot hold the pass open.
+  const close = async () => {
+    let timer;
+    const late = new Promise((_, fail) => { timer = setTimeout(() => fail(new Error('IMAP: LOGOUT timed out')), opts.closeTimeoutMs ?? 5000); });
+    try { await Promise.race([cmd('LOGOUT'), late]); } catch { /* closing anyway */ } finally { clearTimeout(timer); sock.destroy(); }
+  };
+  return { cmd, close };
 }
 
 /** Unfold a raw header block into {lowercase-name: [values]} (top to bottom). */
@@ -125,16 +131,21 @@ export function parseFetch(r) {
   const receivedAt = date ? new Date(date.replace(/^(\d{1,2})-(\w{3})-(\d{4})/, '$2 $1 $3')).toISOString() : null;
   return {
     id: first('message-id') || `uid:${uid}`, uid: Number(uid), threadId: first('message-id') || null, receivedAt,
-    from: decodeWords(first('from')), subject: decodeWords(first('subject')),
+    // `from` stays undecoded: an RFC 2047 encoded word in the display name must never become an address.
+    from: (h.from || []).length === 1 ? h.from[0] : '', subject: decodeWords(first('subject')),
     messageId: first('message-id'), references: first('references'),
-    headers: { autoSubmitted: first('auto-submitted'), precedence: first('precedence'), listId: first('list-id'), autoResponseSuppress: first('x-auto-response-suppress'), authResults: h['authentication-results'] || [] },
+    headers: { autoSubmitted: first('auto-submitted'), precedence: first('precedence'), listId: first('list-id'), autoResponseSuppress: first('x-auto-response-suppress'), returnPath: first('return-path'), authResults: h['authentication-results'] || [] },
   };
 }
 
-/** Messages received since `sinceMs` (IMAP SINCE is by day; the caller filters by minute). Newest `limit` only. */
+/**
+ * Messages received since `sinceMs`. IMAP SINCE compares only the date part of INTERNALDATE, in the server's own
+ * time zone, so the search asks for one day earlier than the UTC date of the cut-off: that covers every zone. The
+ * caller applies the exact cut-off, by the minute. Newest `limit` only.
+ */
 export async function listRecent(session, { mailbox = 'INBOX', sinceMs, limit = 100, readOnly = true }) {
   await session.cmd(`${readOnly ? 'EXAMINE' : 'SELECT'} ${quote(mailbox)}`);
-  const found = await session.cmd(`UID SEARCH SINCE ${imapDate(sinceMs)}`);
+  const found = await session.cmd(`UID SEARCH SINCE ${imapDate(sinceMs - 86_400_000)}`);
   const uids = found.flatMap((r) => (/^\* SEARCH\b/i.test(r.text) ? r.text.slice(8).trim().split(/\s+/).filter(Boolean).map(Number) : [])).sort((a, b) => a - b).slice(-limit);
   if (!uids.length) return [];
   const got = await session.cmd(`UID FETCH ${uids.join(',')} (UID INTERNALDATE BODY.PEEK[HEADER.FIELDS (${HEADER_FIELDS.join(' ')})])`);
