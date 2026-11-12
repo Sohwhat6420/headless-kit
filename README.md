@@ -9,8 +9,8 @@
 <img src="tools/research/reddit-pull/docs/demo.svg" alt="Terminal: reddit-pull scans about 3,100 r/rust posts and comments in 176 seconds and keeps 55 posts and 69 comments that match" width="100%">
 
 The tools my AI agents use every day, kept as light as I can make them. They route work to whichever model pool is
-about to lose unspent allowance, keep Claude Code honest with hooks, guard the machine before heavy work, and pull
-research without a browser. [reddit-pull](tools/research/reddit-pull) and [detached-run](tools/guards/detached-run)
+about to lose unspent allowance, keep Claude Code honest with hooks, guard the machine before heavy work, pull
+research without a browser, and watch inboxes and GitHub stars with plain code instead of model calls. [reddit-pull](tools/research/reddit-pull) and [detached-run](tools/guards/detached-run)
 live here too.
 
 - **No dependencies.** Most tools are a single Node file: copy the one you need and leave the rest.
@@ -70,6 +70,8 @@ written to files. Anything a tool fetches from outside is data for the agent to 
 | Research | [reddit-pull](tools/research/reddit-pull) | Pulls public Reddit posts and comments from the Arctic Shift archive, with no browser and no key. | Node 18+, any OS |
 | Research | [ig2md](tools/research/ig2md) | Turns a public Instagram post, reel or carousel into schema-versioned JSON + Markdown (and frames) by running yt-dlp, gallery-dl and the public embed page. Logged-out only, rate-limited. | Node 18+, any OS; optional yt-dlp / gallery-dl / ffmpeg |
 | Research | [token-totals](tools/research/token-totals) | Totals the tokens in Claude Code session logs, deduplicated, per day and per model; optional ledger that never lowers a recorded day. Read-only on every log. | Node 18+, any OS |
+| Trackers | [mail-reply](tools/trackers/mail-reply) | Answers every email from an allow-list in its own thread within minutes, from a template (bold headline, three short lines), over IMAP + SMTP or Composio. No model reads the mail; dry run unless `--send`. | Node 18+, any OS |
+| Trackers | [github-stars](tools/trackers/github-stars) | Diffs any user's GitHub stars against a state file and pushes only what is new (ntfy or a webhook), plus an optional Markdown log. No model calls. | Node 18+, any OS |
 
 ## See them run
 
@@ -109,6 +111,7 @@ category). Tools that support only Windows are skipped on other systems. GitHub 
 tools/routing/    model routing + dispatch
 tools/guards/     machine guards
 tools/research/   research and capture
+tools/trackers/   token-free change trackers (mail, stars)
 hooks/            Claude Code hooks (hooks/hooks.json wires them into the plugin)
 .claude-plugin/   plugin.json + marketplace.json
 ```
@@ -136,7 +139,8 @@ only reports unless you pass `--close`, and `bin-dump` moves rather than deletes
 Coming tools:
 
 - **Prompt-injection scanner**: flags instruction-like text in fetched content before an agent reads it.
-- **Change trackers**: watch a page, feed or archive and report only what changed.
+- **More change trackers**: watch a page, feed or archive and report only what changed (mail and GitHub stars are
+  in [tools/trackers](tools/trackers)).
 
 ## Licence
 

@@ -2,6 +2,17 @@
 
 All notable changes to headless-kit. Dates are UTC.
 
+## Unreleased
+
+### Added
+
+- **Trackers** (new category, `tools/trackers/`): token-free watchers that wake an agent only when something
+  changed.
+  - `mail-reply`: same-thread acknowledgement for every email from an allow-list, from a template (HTML with a
+    plain-text alternative, or plain text), over IMAP + SMTP (standard library clients) or Composio. Dry run unless
+    `--send`; ledger, sender authentication from the topmost `Authentication-Results`, auto-reply loop guards.
+  - `github-stars`: new-star diff for any GitHub user with seeding, a Markdown log and an ntfy or webhook push.
+
 ## 0.2.0 (2026-11-11)
 
 One repo for every tool, grouped by category, with the Claude Code hooks installable as a plugin.
