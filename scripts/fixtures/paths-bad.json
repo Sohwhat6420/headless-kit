@@ -1,0 +1,5 @@
+{
+  "windows": ["C:", "Users", "fixture-user", "project"],
+  "macos": ["", "Users", "fixture-user", "project"],
+  "linux": ["", "home", "fixture-user", "project"]
+}

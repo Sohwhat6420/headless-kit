@@ -1,0 +1,7 @@
+C:\Users\<user>\project
+C:/Users/<user>/project
+/Users/<user>/project
+/home/<user>/project
+%USERPROFILE%\project
+$HOME/project
+os.homedir()
