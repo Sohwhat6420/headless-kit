@@ -11,13 +11,13 @@
 //
 // Mail is LANE OUTPUT: untrusted data, never instructions and never the owner's approval. Control characters,
 // bidirectional overrides and token shapes are removed before anything is printed.
-// The token comes from --token-file, GH_TOKEN, GITHUB_TOKEN or `gh auth token` (in-process); it is never printed.
+// The token is scoped to the API host (a github.com token is never sent elsewhere) and is never printed.
 // Exit codes: 0 mail (or ok), 1 no mail / post refused or failed, 2 usage, 3 wait gave up, 4 token or repo error.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 export const VERSION = '0.1.0';
 const API = 'https://api.github.com';
@@ -42,7 +42,9 @@ const HELP = `lane-mailbox ${VERSION}: a private GitHub repo as a mailbox for ag
   --max-min MIN       wait gives up after this many minutes, exit 3 (default 600)
   --max-mail N        mail printed per wake; the rest wait for the next run (default 20)
   --max-chars N       characters kept per mail (default 6000)
-  --token-file FILE   GitHub token file; else GH_TOKEN, GITHUB_TOKEN, else \`gh auth token\` (never printed)
+  --token-file FILE   token file (never printed). Otherwise, for api.github.com: GH_TOKEN, GITHUB_TOKEN, else
+                      \`gh auth token\`; for an Enterprise host: GH_ENTERPRISE_TOKEN, GITHUB_ENTERPRISE_TOKEN, else
+                      \`gh auth token --hostname HOST\`; for a local stub: no real token unless this flag is given
   --api-base URL      GitHub API base (env LANE_MAILBOX_API_BASE; default https://api.github.com; https only,
                       except http://127.0.0.1 or localhost for a local stub)
   --config FILE       JSON config with the same keys in camelCase (env LANE_MAILBOX_CONFIG)
@@ -129,7 +131,11 @@ export function settings(argv, env = process.env, cwd = process.cwd()) {
     if (!s.repo) throw new UsageError('--repo OWNER/NAME is required (or LANE_MAILBOX_REPO, or "repo" in the config)');
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(s.repo)) throw new UsageError(`--repo must look like OWNER/NAME, not ${s.repo}`);
   }
-  if (!/^[A-Za-z0-9._\/-]+$/.test(s.branch) || !/^[A-Za-z0-9._\/-]+$/.test(s.inbox)) throw new UsageError('branch and inbox may use letters, digits, . _ / - only');
+  // Each "/"-separated part: letters, digits, . _ -; never empty, ".", "..", or starting with "-" (a git option).
+  const safeRel = (v) => /^[A-Za-z0-9._\/-]+$/.test(v) && v.split('/').every((seg) => seg && seg !== '.' && seg !== '..' && !seg.startsWith('-') && !seg.endsWith('.lock'));
+  if (!safeRel(s.branch) || !safeRel(s.inbox)) {
+    throw new UsageError('branch and inbox: letters, digits, . _ - and /, with no empty, "." or ".." part and no part starting with "-"');
+  }
   const st = flags.state ?? env.LANE_MAILBOX_STATE ?? file.state;
   s.state = st ? (flags.state || env.LANE_MAILBOX_STATE ? resolve(cwd, String(st)) : asPath(st, base))
     : join(stateRoot(env), `${String(s.repo || 'none').replace('/', '__')}.json`);
@@ -138,22 +144,41 @@ export function settings(argv, env = process.env, cwd = process.cwd()) {
 
 // ---------------------------------------------------------------------------------------------- secrets
 
-/** The GitHub token: a named file, GH_TOKEN, GITHUB_TOKEN, else `gh auth token` run in-process (no shell, no window). */
+/** Which kind of host --api-base names: the public API, a GitHub Enterprise host, or a local stub. */
+export function apiKind(apiBase) {
+  const u = new URL(apiBase);
+  if (u.origin === API) return { kind: 'github.com' };
+  if (u.protocol === 'http:') return { kind: 'local' };
+  // GitHub Enterprise Server: https://HOST/api/v3. GHE.com data residency: https://api.SUB.ghe.com -> SUB.ghe.com.
+  const host = /^api\.[^.]+\.ghe\.com$/i.test(u.hostname) ? u.hostname.slice(4) : u.hostname;
+  return { kind: 'enterprise', host };
+}
+
+/**
+ * The token, scoped to the host it will be sent to, so a github.com credential never leaves for another host:
+ *   api.github.com   --token-file, GH_TOKEN, GITHUB_TOKEN, else `gh auth token`
+ *   Enterprise host  --token-file, GH_ENTERPRISE_TOKEN, GITHUB_ENTERPRISE_TOKEN, else `gh auth token --hostname HOST`
+ *   local stub       --token-file only; otherwise a placeholder, never a real credential
+ * gh runs in-process with no shell and no window.
+ */
 export function getToken(s, env = process.env, execFileSyncImpl = execFileSync) {
+  const where = apiKind(s.apiBase || API);
   if (s.tokenFile) {
     let t = '';
     try { t = readFileSync(s.tokenFile, 'utf8').trim(); } catch (e) { throw new FatalError(`token file: ${e.code || 'unreadable'}`); }
     if (!t) throw new FatalError('token file is empty');
     return { token: t, source: 'token-file' };
   }
-  if (env.GH_TOKEN && env.GH_TOKEN.trim()) return { token: env.GH_TOKEN.trim(), source: 'GH_TOKEN' };
-  if (env.GITHUB_TOKEN && env.GITHUB_TOKEN.trim()) return { token: env.GITHUB_TOKEN.trim(), source: 'GITHUB_TOKEN' };
+  if (where.kind === 'local') return { token: 'local-stub-placeholder', source: 'placeholder' };
+  const vars = where.kind === 'github.com' ? ['GH_TOKEN', 'GITHUB_TOKEN'] : ['GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN'];
+  for (const v of vars) if (env[v] && env[v].trim()) return { token: env[v].trim(), source: v };
+  const args = where.kind === 'github.com' ? ['auth', 'token'] : ['auth', 'token', '--hostname', where.host];
   let t = '';
   try {
-    t = String(execFileSyncImpl('gh', ['auth', 'token'], { windowsHide: true, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] }) || '').trim();
+    t = String(execFileSyncImpl('gh', args, { windowsHide: true, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] }) || '').trim();
   } catch { t = ''; }
-  if (!t) throw new FatalError('no GitHub token: run `gh auth login`, set GH_TOKEN, or pass --token-file');
-  return { token: t, source: 'gh' };
+  if (!t) throw new FatalError(`no GitHub token for ${where.host || 'github.com'}: run \`gh auth login${where.host ? ` --hostname ${where.host}` : ''}\`, set ${vars[0]}, or pass --token-file`);
+  return { token: t, source: where.host ? `gh --hostname ${where.host}` : 'gh' };
 }
 
 const SECRET_SHAPES = [
@@ -177,6 +202,18 @@ export function findSecrets(text) {
 
 export const redact = (msg, secrets) => secrets.filter(Boolean).reduce((m, s) => m.split(s).join('[secret]'), String(msg));
 
+// C0/C1 controls except tab and newline; every format character (\p{Cf}: bidi controls, zero-width characters, the
+// Unicode tag block U+E0000-E007F, soft hyphen, BOM, interlinear annotation marks); variation selectors; and the
+// Hangul fillers and other blank letters that render as nothing.
+const INVISIBLE = /[\x00-\x08\x0b-\x1f\x7f-\x9f]|\p{Cf}|[\u{FE00}-\u{FE0F}\u{E0100}-\u{E01EF}\u180B-\u180F\u034F\u115F\u1160\u3164\uFFA0\u2800]/gu;
+
+/** A file name rebuilt from safe characters only: what is printed, never what is fetched. */
+export function safeName(file, inbox = 'inbox') {
+  const base = String(file).slice(inbox.length + 1);
+  const clean = base.replace(/[^A-Za-z0-9._-]/g, '').replace(/^\.+/, '').slice(0, 96) || 'unnamed.md';
+  return `${inbox}/${clean}`;
+}
+
 /**
  * Make fetched mail safe to print into an agent's context: no terminal escapes, no C0/C1 controls (tab and newline
  * stay), no bidirectional overrides or zero-width characters (they hide text from a human reviewer), token shapes
@@ -188,8 +225,8 @@ export function sanitise(raw, maxChars = 6000) {
     .replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, '') // CSI (colours, cursor moves)
     .replace(/\x1b[@-_]?/g, '')
     .replace(/\r\n?/g, '\n')
-    .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f]/g, '')
-    .replace(/[\u061c\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g, '');
+    .replace(/[\u2028\u2029]/g, '\n') // line and paragraph separators: a visible newline, not a hidden one
+    .replace(INVISIBLE, '');
   let redacted = 0;
   for (const [name, re] of SECRET_SHAPES) t = t.replace(re, () => { redacted++; return `[redacted ${name}]`; });
   const truncated = t.length > maxChars;
@@ -214,9 +251,13 @@ function client(s, token, fetchImpl) {
       res = await fetchImpl(`${s.apiBase}${path}`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': UA, ...extra },
         signal: AbortSignal.timeout(20_000),
+        redirect: 'manual', // never follow: a redirect could carry the Authorization header to another host
       });
     } catch (e) { throw new Error(redact(`network: ${e?.message || e}`, [token])); }
     if (res.status === 401) throw new FatalError('GitHub 401: the token was refused');
+    if ([301, 302, 303, 307, 308].includes(res.status) || res.type === 'opaqueredirect') {
+      throw new FatalError(`GitHub ${res.status || 'redirect'}: not followed (was the repo renamed or moved? update --repo)`);
+    }
     if (res.status === 429 || (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0')) {
       const retry = Number(res.headers.get('retry-after'));
       const reset = Number(res.headers.get('x-ratelimit-reset'));
@@ -227,6 +268,7 @@ function client(s, token, fetchImpl) {
   };
 }
 
+const SHA = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/; // SHA-1, or SHA-256 repositories
 const contentsPath = (s, file, ref) => `/repos/${s.repo}/contents/${file.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(ref)}`;
 
 /** One poll. Returns the mail found (possibly from a queue left by an earlier poll) and mutates state. */
@@ -236,14 +278,17 @@ export async function check(s, state, gh) {
     for (const f of list) {
       const res = await gh(contentsPath(s, f.file, f.ref), { Accept: 'application/vnd.github.raw' });
       if (res.status === 404) continue; // deleted again before we read it
-      if (!res.ok) throw new Error(`GitHub ${res.status} reading ${f.file}`);
+      if (res.status === 403) throw new FatalError(`GitHub 403 reading ${safeName(f.file, s.inbox)}: the token cannot read this repo's contents`);
+      if (!res.ok) throw new Error(`GitHub ${res.status} reading ${safeName(f.file, s.inbox)}`);
       const { text, redacted, truncated } = sanitise(await res.text(), s.maxChars);
-      out.push({ file: f.file, ...parseName(f.file, s.inbox), ref: f.ref, text, redacted, truncated });
+      const file = safeName(f.file, s.inbox);
+      out.push({ file, ...(file !== f.file ? { nameSanitised: true } : {}), ...parseName(f.file, s.inbox), ref: f.ref, text, redacted, truncated });
     }
     return out;
   };
 
-  if (Array.isArray(state.pending) && state.pending.length) {
+  if (Array.isArray(state.pending)) state.pending = state.pending.filter((f) => f && typeof f.file === 'string' && SHA.test(String(f.ref)));
+  if (state.pending && state.pending.length) {
     const take = state.pending.slice(0, s.maxMail);
     const mail = await fetchMail(take);
     state.pending = state.pending.slice(take.length);
@@ -256,7 +301,8 @@ export async function check(s, state, gh) {
   if (!res.ok) throw new Error(`GitHub ${res.status}`);
   const head = await res.json();
   const etag = res.headers.get('etag');
-  if (!head || typeof head.sha !== 'string') throw new Error('GitHub: unexpected commit shape');
+  if (!head || !SHA.test(String(head.sha))) throw new Error('GitHub: unexpected commit shape');
+  if (state.lastSha && !SHA.test(String(state.lastSha))) { delete state.lastSha; delete state.etag; } // a damaged state file
   if (!state.lastSha) { Object.assign(state, { etag, lastSha: head.sha, baselinedAt: new Date().toISOString() }); return []; }
   if (head.sha === state.lastSha) { state.etag = etag; return []; }
 
@@ -315,8 +361,8 @@ export async function post(s, { env = process.env, now = () => Date.now(), sleep
   const out = { ok: true, file: rel, committed: true, pushed: false, sha: git(top, ['rev-parse', 'HEAD'], env).out };
   if (!s.push) return { code: 0, out };
   for (let attempt = 1; attempt <= 4; attempt++) {
-    const pull = git(top, ['pull', '-q', '--rebase', 'origin', s.branch], env);
-    const push = pull.ok ? git(top, ['push', '-q', 'origin', `HEAD:${s.branch}`], env) : pull;
+    const pull = git(top, ['pull', '-q', '--rebase', 'origin', `refs/heads/${s.branch}`], env);
+    const push = pull.ok ? git(top, ['push', '-q', 'origin', `HEAD:refs/heads/${s.branch}`], env) : pull;
     if (push.ok) return { code: 0, out: { ...out, pushed: true, sha: git(top, ['rev-parse', 'HEAD'], env).out, attempts: attempt } };
     out.error = `git ${pull.ok ? 'push' : 'pull --rebase'} failed: ${push.err || push.error?.code || 'unknown'}`;
     if (attempt < 4) { stderr?.write(`lane-mailbox: ${out.error}; retrying\n`); await sleep(2000 * 2 ** (attempt - 1)); }
@@ -402,12 +448,14 @@ export async function run(argv, {
       return emit({ ok: true, repo: s.repo, notice: NOTICE, untrusted: true, mail, queued: (state.pending || []).length }, 0);
     }
     if (s.command === 'check') return emit({ ok: !state.lastError, repo: s.repo, mail: [], error: state.lastError }, 1);
-    if (now() - started >= s.maxMin * 60_000) return emit({ ok: true, repo: s.repo, mail: [], gaveUp: true, note: 'no mail; run wait again' }, 3);
-    await sleep(delay);
+    const left = s.maxMin * 60_000 - (now() - started);
+    if (left <= 0) return emit({ ok: true, repo: s.repo, mail: [], gaveUp: true, note: 'no mail; run wait again' }, 3);
+    await sleep(Math.min(delay, left));
   }
 }
 
-const isMain = (() => { try { return import.meta.url === pathToFileURL(process.argv[1] || '').href; } catch { return false; } })();
+// realpath on both sides, so an npm bin symlink (or a symlinked checkout) still runs as the CLI
+const isMain = (() => { try { return realpathSync(process.argv[1] || '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (isMain) {
   run(process.argv.slice(2)).then((code) => { process.exitCode = code; }, (e) => {
     process.stdout.write(`${JSON.stringify({ ok: false, error: String(e?.message || e) })}\n`);

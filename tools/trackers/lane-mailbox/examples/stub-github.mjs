@@ -13,7 +13,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 function listing(dir) {
   const out = {};
@@ -76,7 +76,8 @@ export function startStub({ dir, port = 0 } = {}) {
   }));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+const isMain = (() => { try { return fs.realpathSync(process.argv[1] || '') === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (isMain) {
   const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
   const dir = path.resolve(arg('--dir', '.'));
   fs.mkdirSync(path.join(dir, 'inbox'), { recursive: true });
