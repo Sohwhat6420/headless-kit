@@ -118,13 +118,23 @@ export function readSecret(file) {
 
 // ---------------------------------------------------------------------------------------------- source
 
-const clean = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+// Untrusted text to one capped line. Format characters (zero-width, bidirectional overrides and isolates, BOM) are
+// removed outright, since they can hide or reorder what a reader sees; control characters (C0 and C1) become a space.
+const clean = (s, max) => String(s ?? '').replace(/\p{Cf}+/gu, '').replace(/\p{Cc}+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+
+const REPO_NAME = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}$/;
+/** The link that is logged and pushed is always a page on github.com: GitHub's own, else rebuilt from the name. */
+function repoUrl(name, url) {
+  const u = clean(url, 300);
+  if (/^https:\/\/github\.com\/[^\s?#]+$/.test(u)) return u;
+  return REPO_NAME.test(name) ? `https://github.com/${name}` : '';
+}
 
 /** One star from GitHub's star+json shape. Every text field is untrusted data. */
 export function toStar(s) {
   const r = s.repo || {};
   return {
-    name: clean(r.full_name, 140), at: s.starred_at, url: clean(r.html_url, 300),
+    name: clean(r.full_name, 140), at: s.starred_at, url: repoUrl(clean(r.full_name, 140), r.html_url),
     desc: clean(r.description, 300), stars: Number(r.stargazers_count) || 0, lang: clean(r.language, 40),
   };
 }
@@ -184,7 +194,7 @@ export function mdHeader(user) {
 export function mdRow(s, tzOffsetH = 0) {
   const t = new Date(Date.parse(s.at) + tzOffsetH * 3_600_000).toISOString().replace('T', ' ').slice(0, 16);
   const zone = tzOffsetH ? `UTC${tzOffsetH > 0 ? '+' : ''}${tzOffsetH}` : 'UTC';
-  const cell = (v, max) => clean(v, max).replace(/\|/g, '/').replace(/[[\]]/g, '');
+  const cell = (v, max) => clean(v, max).replace(/\|/g, '/').replace(/[[\]]/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/`/g, "'");
   return `| ${t} ${zone} | [${cell(s.name, 140)}](${encodeURI(cell(s.url, 300))}) | ${cell(s.desc, 160)} | ${s.stars} | ${cell(s.lang, 40)} |\n`;
 }
 
@@ -204,6 +214,11 @@ export async function pushWebhook({ url, payload, fetchImpl = fetch }) {
   const res = await fetchImpl(url, { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': UA }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`webhook answered HTTP ${res.status}`);
 }
+
+/** Run it; if it fails, wait and run it once more (a push that fails twice is reported). */
+const twice = async (fn, delayMs) => {
+  try { return await fn(); } catch { if (delayMs > 0) await new Promise((r) => { setTimeout(r, delayMs); }); return fn(); }
+};
 
 // ---------------------------------------------------------------------------------------------- one poll
 
@@ -232,7 +247,7 @@ function saveState(f, s) {
 const shown = (f) => { const r = relative(process.cwd(), f); return r && !r.startsWith('..') && !isAbsolute(r) ? r : f; };
 
 /** One poll with every side effect injectable. Returns the JSON result. */
-export async function poll(s, { fetchImpl = fetch, execFileImpl = execFile, env = process.env, now = () => new Date() } = {}) {
+export async function poll(s, { fetchImpl = fetch, execFileImpl = execFile, env = process.env, now = () => new Date(), retryDelayMs = 2000 } = {}) {
   const token = readSecret(s.tokenFile) || env.GITHUB_TOKEN || null;
   const topic = readSecret(s.ntfyTopicFile);
   const hook = readSecret(s.webhookUrlFile);
@@ -262,11 +277,11 @@ export async function poll(s, { fetchImpl = fetch, execFileImpl = execFile, env 
   out.errors = [];
   for (const b of batch) {
     if (topic) {
-      try { await pushNtfy({ base: s.ntfyBase, topic, title: b.title, body: b.body, click: b.click, fetchImpl }); out.pushed.ntfy++; }
+      try { await twice(() => pushNtfy({ base: s.ntfyBase, topic, title: b.title, body: b.body, click: b.click, fetchImpl }), retryDelayMs); out.pushed.ntfy++; }
       catch (e) { out.pushed.failed++; out.errors.push(redact(`ntfy: ${e.message}`, secrets)); }
     }
     if (hook) {
-      try { await pushWebhook({ url: hook, payload: b.payload, fetchImpl }); out.pushed.webhook++; }
+      try { await twice(() => pushWebhook({ url: hook, payload: b.payload, fetchImpl }), retryDelayMs); out.pushed.webhook++; }
       catch (e) { out.pushed.failed++; out.errors.push(redact(`webhook: ${e.message}`, secrets)); }
     }
   }

@@ -17,13 +17,13 @@
 git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/trackers/github-stars
 node github-stars.mjs --user octocat --state stars.json        # first run: seeds, announces nothing
 node github-stars.mjs --user octocat --state stars.json        # later runs: only what is new
-node --test                                                    # 10 offline tests, under 1 s
+node --test                                                    # 12 offline tests, under 1 s
 ```
 
 <details>
 <summary><b>The offline test suite, real output</b></summary>
 <br>
-<img src="docs/test-run.svg" alt="10 of 10 tests pass: seeding, new stars oldest first with no repeats, an old star sliding onto page one recorded silently, webhook bodies and the summary push, dry run, secrets kept out of the output, another user's state refused, Markdown escaping, settings precedence, the gh CLI path, and exit codes" width="100%">
+<img src="docs/test-run.svg" alt="12 of 12 tests pass: seeding, new stars oldest first with no repeats, an old star sliding onto page one recorded silently, webhook bodies and the summary push, dry run, secrets kept out of the output, another user's state refused, Markdown escaping, a failed push retried once, invisible characters and HTML kept out, settings precedence, the gh CLI path, and exit codes" width="100%">
 </details>
 
 It is part of **[headless-kit](../../../README.md)**, a set of small, agent-first, windowless tools: output as a JSON line, standard library only.
@@ -76,7 +76,7 @@ A webhook receives `{"event":"github-star","user":...,"name","url","at","desc","
 
 | Exit | Meaning |
 | --- | --- |
-| 0 | Poll done (a failed push is reported in `pushed.failed` and `errors`, not fatal). |
+| 0 | Poll done (a push that fails is tried once more after 2 seconds; if it fails again it is reported in `pushed.failed` and `errors`, not fatal, and not sent on a later poll). |
 | 1 | GitHub or a file could not be read or written (stdout: `{"ok": false, "error": "..."}`). |
 | 2 | Bad usage or config. |
 | 4 | Another poll holds the state lock. |
@@ -85,12 +85,12 @@ A webhook receives `{"event":"github-star","user":...,"name","url","at","desc","
 
 - **No model, no agent.** Nothing here calls an LLM; an agent reads the JSON line or reacts to the push.
 - **Secrets stay in files.** The ntfy topic (anyone who knows it can read your pushes), the webhook URL and the token are read from files you name, sent only in the request (the token only to `api.github.com`), and redacted from every error. The tests check stdout for all three.
-- **Fetched text is data, never instructions** (OWASP LLM01). Repo names and descriptions come from strangers: control characters are stripped, lengths capped, and pipes and brackets removed before they reach the Markdown table or a push.
+- **Fetched text is data, never instructions** (OWASP LLM01). Repo names and descriptions come from strangers: control characters and invisible format characters (zero-width, right-to-left overrides) are stripped, lengths capped, and pipes, brackets, backticks and HTML angle brackets removed or escaped before they reach the Markdown table. The link that is logged and pushed is always a page on `github.com`.
 - **Windowless.** The only child process is `gh` with `--gh`, started with `windowsHide: true`.
 
 ## Status
 
-Tested (offline, 10 `node:test` cases, under 1 s on Windows 11 with Node 22): seeding, new stars oldest first with no repeats, the unstar slide, ntfy and webhook push shapes, the summary push, dry run, secret redaction, the per-user state guard, Markdown escaping, settings precedence, the `gh` path (through an injected `execFile`) and exit codes. The demo above is a real run against GitHub's public API.
+Tested (offline, 12 `node:test` cases, under 1 s on Windows 11 with Node 22): seeding, new stars oldest first with no repeats, the unstar slide, ntfy and webhook push shapes, the summary push, dry run, secret redaction, the per-user state guard, Markdown escaping, the single push retry, invisible characters and HTML in fetched text, settings precedence, the `gh` path (through an injected `execFile`) and exit codes. The demo above is a real run against GitHub's public API.
 
 Not covered: more than 100 new stars between two polls (only page 1 is read), GitHub API changes to the `star+json` shape, and Node 18 itself (only Node 22 was run; nothing newer than Node 18 is used).
 

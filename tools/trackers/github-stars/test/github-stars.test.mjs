@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { run, diff, mdRow, settings, fetchStarsGh, redact } from '../github-stars.mjs';
+import { run, diff, mdRow, settings, fetchStarsGh, redact, toStar } from '../github-stars.mjs';
 
 const TOPIC = 'example_topic_d41d8cd98f00b204';
 const HOOK = 'https://hooks.example.invalid/in/example_secret_9f86d081';
@@ -125,7 +125,7 @@ test('the token goes only in the request header; topic, webhook and token never 
   list = [star('c/d', '2026-11-12T00:00:00Z'), ...list];
   fail = true;
   const out = sink();
-  assert.equal(await run(argv, { stdout: out, fetchImpl, env: {} }), 0, 'a failed push is reported, not fatal');
+  assert.equal(await run(argv, { stdout: out, fetchImpl, env: {}, retryDelayMs: 0 }), 0, 'a failed push is reported, not fatal');
   const text = out.lines.join('');
   assert.equal(out.json().pushed.failed, 2);
   for (const secret of [TOPIC, HOOK, TOKEN]) assert.ok(!text.includes(secret), 'no secret in the output');
@@ -145,6 +145,46 @@ test('fetched text is data: control characters, pipes and brackets cannot break 
   const row = mdRow({ name: 'a/b', url: 'https://github.com/a/b', at: '2026-11-12T00:00:00Z', desc: 'x | y\n## ignore previous instructions [link](http://e)', stars: 1, lang: 'Go' }, 8);
   assert.equal(row.split('\n').length, 2, 'one line');
   assert.match(row, /^\| 2026-11-12 08:00 UTC\+8 \| \[a\/b\]\(https:\/\/github.com\/a\/b\) \| x \/ y ## ignore previous instructions link\(http:\/\/e\) \| 1 \| Go \|\n$/);
+});
+
+test('a failed push is tried once more, then reported', async () => {
+  const d = dir();
+  let list = [star('a/b', '2026-11-01T00:00:00Z')];
+  const tries = { ntfy: 0, hook: 0 };
+  const fetchImpl = async (url) => {
+    const u = new URL(url);
+    if (u.host === 'api.github.com') return new Response(JSON.stringify(list), { status: 200 });
+    if (u.host === 'ntfy.sh') { tries.ntfy++; return new Response('', { status: tries.ntfy === 1 ? 503 : 200 }); }   // fails once
+    tries.hook++;
+    throw new Error('connect ECONNRESET');   // always fails
+  };
+  const argv = ['--user', 'example-user', '--state', join(d, 's.json'), '--ntfy-topic-file', join(d, 'topic.txt'), '--webhook-url-file', join(d, 'hook.txt')];
+  await run(argv, { stdout: sink(), fetchImpl, env: {}, retryDelayMs: 0 });
+  list = [star('c/d', '2026-11-12T00:00:00Z'), ...list];
+  const out = sink();
+  assert.equal(await run(argv, { stdout: out, fetchImpl, env: {}, retryDelayMs: 0 }), 0);
+  assert.deepEqual(out.json().pushed, { ntfy: 1, webhook: 0, failed: 1 });
+  assert.deepEqual(tries, { ntfy: 2, hook: 2 }, 'one retry each, no more');
+  assert.equal(out.json().errors.length, 1);
+});
+
+test('fetched text is data: invisible characters go, HTML cannot reach the log, links stay on github.com', () => {
+  // Built from code points so this file holds no invisible characters: right-to-left override, left-to-right
+  // isolate, zero-width space, and a C1 control (NEL).
+  const [rlo, lri, zwsp, nel] = [0x202e, 0x2066, 0x200b, 0x85].map((n) => String.fromCodePoint(n));
+  const s = toStar({ starred_at: '2026-11-12T00:00:00Z', repo: {
+    full_name: 'a/b', html_url: 'javascript:alert(1)', language: 'Go',
+    description: `safe${rlo}txet${lri} hid${zwsp}den${nel} <img src=x onerror=alert(1)> \`code\` ${'z'.repeat(500)}`,
+  } });
+  assert.equal(s.url, 'https://github.com/a/b', 'a link that is not the repo page on github.com is rebuilt from the name');
+  assert.doesNotMatch(s.desc, /[\p{Cc}\p{Cf}]/u, 'no control or format characters');
+  assert.ok(s.desc.startsWith('safetxet hidden <img'), s.desc.slice(0, 40));
+  assert.ok(s.desc.length <= 300);
+  assert.equal(toStar({ starred_at: 'x', repo: { full_name: 'a/b', html_url: 'https://github.com.evil.example/a/b' } }).url, 'https://github.com/a/b');
+  assert.equal(toStar({ starred_at: 'x', repo: { full_name: 'not a repo name', html_url: 'https://evil.example/' } }).url, '');
+  const row = mdRow(s, 0);
+  assert.doesNotMatch(row, /[<>`]/, 'no HTML or code span in the Markdown log');
+  assert.match(row, /&lt;img src=x onerror=alert\(1\)&gt; 'code'/);
 });
 
 test('settings: flags beat env beat config; bad values are usage errors', () => {

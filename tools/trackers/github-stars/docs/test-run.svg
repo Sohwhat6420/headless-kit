@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="981" height="354" viewBox="0 0 981 354" role="img" aria-label="github-stars: node --test">
-<rect x="0.5" y="0.5" width="980" height="353" rx="10" fill="#0d1117" stroke="#30363d"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="374" viewBox="0 0 981 374" role="img" aria-label="github-stars: node --test">
+<rect x="0.5" y="0.5" width="980" height="373" rx="10" fill="#0d1117" stroke="#30363d"/>
 <path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
 <circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
 <text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">github-stars: node --test</text>
@@ -12,11 +12,13 @@
 <text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> the token goes only in the request header; topic, webhook and token never reach stdout, even on failure</text>
 <text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a state file of another user is refused (no flood of "new" stars)</text>
 <text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> fetched text is data: control characters, pipes and brackets cannot break the Markdown table</text>
-<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> settings: flags beat env beat config; bad values are usage errors</text>
-<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --gh runs gh api windowless, through the injected execFile</text>
-<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --help exits 0; a GitHub error exits 1 with ok:false</text>
-<text x="20" y="286" xml:space="preserve">ℹ tests 10</text>
-<text x="20" y="306" xml:space="preserve">ℹ pass 10</text>
-<text x="20" y="326" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a failed push is tried once more, then reported</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> fetched text is data: invisible characters go, HTML cannot reach the log, links stay on github.com</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> settings: flags beat env beat config; bad values are usage errors</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --gh runs gh api windowless, through the injected execFile</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --help exits 0; a GitHub error exits 1 with ok:false</text>
+<text x="20" y="326" xml:space="preserve">ℹ tests 12</text>
+<text x="20" y="346" xml:space="preserve">ℹ pass 12</text>
+<text x="20" y="366" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
 </g>
 </svg>
