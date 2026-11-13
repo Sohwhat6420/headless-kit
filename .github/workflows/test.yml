@@ -14,3 +14,5 @@ jobs:
           node-version: 22
       # detached-run is Windows-only; the runner skips it on ubuntu.
       - run: npm test
+      - run: node --test scripts/check-paths.test.mjs
+      - run: npm run check:paths
