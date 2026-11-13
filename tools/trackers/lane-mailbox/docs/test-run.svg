@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="596" viewBox="0 0 981 596" role="img" aria-label="lane-mailbox: node --test">
+<rect x="0.5" y="0.5" width="980" height="595" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">lane-mailbox: node --test</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> first check baselines silently; a 304 costs nothing; new inbox files are mail, other changes are not</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> wait polls until mail lands and exits 0 (the exit is the wake); --max-min gives up with exit 3</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> transient errors back off and are recorded (redacted); rate limits wait for the reset</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> 401 and 404 are fatal (exit 4), not an endless quiet loop</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> more mail than --max-mail is queued for the next run, never dropped</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a rewritten history (old head gone) re-baselines instead of failing</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> the feed gets one JSON line per mail, marked untrusted</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> mail is sanitised: escapes, controls, bidi and zero-width characters go; token shapes are redacted; long mail is cut</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> parseName and findSecrets</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> token: --token-file, then GH_TOKEN, then GITHUB_TOKEN, then `gh auth token` with windowsHide; never printed</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> usage: --repo is required and must be OWNER/NAME; --help exits 0; status prints the state</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> config file: repo and options in camelCase, flags win</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> post: writes inbox/&lt;UTC stamp&gt;-&lt;lane&gt;.md, commits only that file, pushes only with --push</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> post refuses secrets (types only, never the value), oversize reports, bad lane names and non-clones</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> --api-base: https only, plain http only for localhost, no credentials in the URL</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> end to end: wait against the local GitHub stub with real fetch wakes on a new inbox file</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> M1: a github.com token is never sent to another host; Enterprise uses its own token or gh --hostname</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> redirects are never followed (the token would go with them): exit 4 with a hint</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> M2: the file name is rebuilt from safe characters; tag characters, separators and variation selectors go</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L5: branch and inbox reject "..", ".", empty parts and a leading "-" (no git option injection, no path escape)</text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L6: a commit id that is not hex is refused, and state does not advance</text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L7: a 403 reading mail is fatal; no sleep runs past --max-min</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L1: the CLI still runs when started through a symlink (npm bin)</text>
+<text x="20" y="546" xml:space="preserve">ℹ tests 23</text>
+<text x="20" y="566" xml:space="preserve">ℹ pass 23</text>
+<text x="20" y="586" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+</g>
+</svg>

@@ -6,12 +6,50 @@ All notable changes to headless-kit. Dates are UTC.
 
 ### Added
 
+- **Claude Code hooks:** `focus-gate`, a `UserPromptSubmit` hook (and CLI) that makes Claude turn down off-task
+  requests with one line ("Essay first", the next step, an offer to start) until real work exists on disk for the
+  task you keep putting off. Config-driven items with `from`, `due`, `everyDays` (recurring: only the last N days
+  count), `short` labels and watched paths; begun means a watched file saved with a new size after the baseline
+  (tracked per item and path) or evidence recorded after checking. Triggers: an active item not begun, an optional
+  deadlines file due within 48 hours, and an optional idle trigger (no watched work file changed for 48 hours). Hold
+  while in transit (arms on "settled" / "arrived", at most 3 hours), pause only with a reason (at most 4 hours, also
+  by typing "pause focus gate 2h <reason>"), silent for system, agent and peer-session prompts and unattended runs,
+  fails silent, scan capped by entries and time. Wired into `hooks/hooks.json`; inert until a config file exists.
+- **Trackers:** `lane-mailbox`, a private GitHub repo as the return channel for agent sessions that cannot message
+  back. `wait` polls with an ETag and exits on new `inbox/*.md` files (the exit is the wake), `check` and `status`;
+  overflow beyond `--max-mail` is queued, never dropped; 401, 403 and 404 exit 4 instead of looping. Mail is
+  sanitised (escapes, controls, bidirectional and zero-width characters), token shapes are redacted, and the output
+  is marked untrusted. `post` writes `inbox/<UTC stamp>-<lane>.md`, refuses reports with token shapes or over 3,000
+  characters, commits only that file and pushes only with `--push`. Token from `--token-file`, `GH_TOKEN`,
+  `GITHUB_TOKEN` or `gh auth token` in-process, never printed. `--api-base` for GitHub Enterprise or the bundled
+  local stub (`examples/stub-github.mjs`).
+
 - **Trackers** (new category, `tools/trackers/`): token-free watchers that wake an agent only when something
   changed.
   - `mail-reply`: same-thread acknowledgement for every email from an allow-list, from a template (HTML with a
     plain-text alternative, or plain text), over IMAP + SMTP (standard library clients) or Composio. Dry run unless
     `--send`; ledger, sender authentication from the topmost `Authentication-Results`, auto-reply loop guards.
   - `github-stars`: new-star diff for any GitHub user with seeding, a Markdown log and an ntfy or webhook push.
+
+### Fixed (review of focus-gate and lane-mailbox, before release)
+
+- `lane-mailbox`, token scope: a github.com token (`GH_TOKEN`, `GITHUB_TOKEN`, `gh auth token`) is only ever sent to
+  `api.github.com`. An Enterprise `--api-base` uses `GH_ENTERPRISE_TOKEN`, `GITHUB_ENTERPRISE_TOKEN` or
+  `gh auth token --hostname HOST`; a local stub gets no real credential unless `--token-file` names one. Redirects
+  are never followed (exit 4). The README no longer calls the default token read-only; it recommends a fine-grained
+  read-only token with `--token-file`.
+- `lane-mailbox`, untrusted text: the mail's `file` is rebuilt from safe characters (`nameSanitised: true` when that
+  changed it), and the strip class now covers every Unicode format character (including the tag block
+  U+E0000 to U+E007F), variation selectors and blank fillers; line and paragraph separators become newlines.
+- `lane-mailbox`: `--branch` and `--inbox` refuse `.`, `..`, empty parts and a leading `-`; git gets fully qualified
+  refs; commit ids must be hex; a 403 reading mail is fatal; no sleep runs past `--max-min`; the CLI (and the stub)
+  start correctly through a symlink such as an npm bin.
+- `focus-gate`: a scan cut short by `watch.maxEntries` or `watch.budgetMs` no longer fires the idle trigger and is
+  not cached. Office owner files (`~$x.docx`), editor backups and swap files, temporary and partial downloads, lock
+  files and folder metadata never count as work, and folder items honour `extensions` (the item's own, else
+  `watch.extensions`). The peer-message filter needs `SENDER -> RECIPIENT:`, so a typed `TODO -> ...` is still
+  yours (`peerPattern` to change it). Deadline-file ids and titles are cleaned and clipped before they reach the
+  context.
 
 ### Fixed (review of the trackers, before release)
 

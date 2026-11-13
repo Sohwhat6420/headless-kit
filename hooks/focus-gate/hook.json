@@ -1,0 +1,5 @@
+{
+  "UserPromptSubmit": [
+    { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/focus-gate/focus-gate.mjs\"", "timeout": 5 }] }
+  ]
+}
