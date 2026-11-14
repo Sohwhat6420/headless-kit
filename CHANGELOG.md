@@ -6,6 +6,22 @@ All notable changes to headless-kit. Dates are UTC.
 
 ### Added
 
+- **README:** a new front page. An animated hero (CSS only, light and dark, a still frame for reduced motion) that
+  cycles through four real runs; three terminal shots captured in a Linux container on 14 Nov 2026; one table of all
+  20 tools grouped by job, with what each needs; and a table of every number with its source.
+- `scripts/measure.mjs`: re-measures the README's numbers (item count, dependencies, `windowsHide` on every
+  child-process call, median time and stdout bytes per call; `--live` adds one small `reddit-pull` run). The
+  14 Nov 2026 result is `docs/measurements/2026-11-14.json`.
+- `assets/`: the hero, shots and banners (`banner-1280x640.png` for the social preview,
+  `banner-linkedin-1200x627.png`), rebuilt by `assets/src/build.py` and `assets/src/render-png.mjs` (build-time
+  only: fontTools and Playwright, neither a dependency of any tool).
+
+### Fixed
+
+- `reddit-pull` README: the try-it `cd` path now includes `research/`.
+
+### Added (tools)
+
 - **Claude Code hooks:** `focus-gate`, a `UserPromptSubmit` hook (and CLI) that makes Claude turn down off-task
   requests with one line ("Essay first", the next step, an offer to start) until real work exists on disk for the
   task you keep putting off. Config-driven items with `from`, `due`, `everyDays` (recurring: only the last N days

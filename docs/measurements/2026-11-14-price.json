@@ -1,0 +1,8 @@
+{
+  "what": "The list price behind the cost-per-1,000-checks figures in the README and its chart. Those figures are arithmetic on the measured token counts in 2026-11-14-browser-vs-kit.json, not a measured bill.",
+  "model": "Claude Opus 5.5",
+  "usd_per_million_input_tokens": 4,
+  "kind": "base input tokens; no prompt caching and no Batch discount",
+  "read": "2026-11-14",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+}

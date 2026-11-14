@@ -1,0 +1,8 @@
+$ node memory-gate.mjs
+{"verdict":"ok","pct":3.4,"usedBytes":578297856,"limitBytes":16869146624,"usedGB":0.54,"limitGB":15.71,"thresholds":{"hot":75,"stop":85},"source":"linux-proc-meminfo","basis":"available","platform":"linux","advice":"headroom: heavy work may start","detail":{"committedAS":510115840,"commitLimit":8434573312,"overcommit":0}}
+$ echo $?
+0
+$ node lane-model-check.mjs --transcript examples/transcript.example.jsonl --expect model-large
+{"ok":false,"verdict":"mismatch","expected":"model-large","transcript":"/home/user/headless-kit/tools/guards/lane-model-check/examples/transcript.example.jsonl","lane":null,"session":null,"actual":"model-small-20261001","line":4}
+$ echo $?
+1
