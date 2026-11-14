@@ -654,8 +654,8 @@ def tick_icon(x, y, r, t, sw=2):
 # colour, cost and motion. One hue per tool or way of reading, the same on its squares, its figure, its card and
 # its explainer step. A cost worked out from a published list price. Figures that pour in and then rest finished.
 # ------------------------------------------------------------------------------------------------
-HUES = {"dark": dict(kit="#e3b341", ptext="#2fd4c4", snap="#58a6ff", html="#8b5cf6", reddit="#e389cf", mem="#3fb950"),
-        "light": dict(kit="#9a6700", ptext="#008469", snap="#0b6bd8", html="#5b21b6", reddit="#a3318a", mem="#1a7f37")}
+HUES = {"dark": dict(kit="#e3b341", ptext="#2fd4c4", snap="#58a6ff", html="#8b5cf6", reddit="#e389cf", mem="#3fb950", hook="#b8d04a"),
+        "light": dict(kit="#9a6700", ptext="#008469", snap="#0b6bd8", html="#5b21b6", reddit="#a3318a", mem="#1a7f37", hook="#5a7a0a")}
 _P = json.load(open(os.path.join(ASSETS, "..", "docs", "measurements", "2026-11-14-price.json"), encoding="utf-8"))
 _y, _m, _d = _P["read"].split("-")
 PRICE = dict(model=_P["model"], usd_per_mtok=float(_P["usd_per_million_input_tokens"]), url=_P["source"],
@@ -717,7 +717,7 @@ def stars_ways():
     ways = [dict(key="kit", name="headless-kit", what="one line of JSON", **k["agent_reads"]),
             dict(key="ptext", name="Page text", what="the words on the page", **b["page_text"]),
             dict(key="snap", name="Browser snapshot", what="what a browser tool returns", **b["snapshot"]),
-            dict(key="html", name="Raw HTML", what="the page's whole markup", **b["html"])]
+            dict(key="html", name="Whole markup", what="no browser tool hands this over", **b["html"])]
     for w in ways:
         w["n"] = round(w["tokens"] / unit)
     assert [w["n"] for w in ways] == [1, 17, 99, 1480], [w["n"] for w in ways]
@@ -777,16 +777,26 @@ class Pour:
                 kf = "0%%,%s{opacity:0}%s,%s{opacity:1}%s,to{opacity:0}" % (p(at(k)), p(at(k) + 0.002), p(at(k + 1)), p(at(k + 1) + 0.002))
             else:
                 kf = "0%%,%s{opacity:1}%s,%s{opacity:0}%s,to{opacity:1}" % (p(a), p(z), p(at(k)), p(at(k) + (0.09 if kind == "s" else 0.002)))
-            out.append("@keyframes %s{%s}.%s{animation:%s %ss linear infinite}" % (name, kf, name, name, f(T)))
+            # a counter's passing values switch in one instant (step-end), so two of them are never on show together
+            out.append("@keyframes %s{%s}.%s{animation:%s %ss %s infinite}" % (name, kf, name, name, f(T), "step-end" if kind == "c" else "linear"))
         out.append(".pu{animation:pu 2.6s ease-in-out infinite alternate}@keyframes pu{from{opacity:.4}}")
         out.append("@media (prefers-reduced-motion: reduce){*{animation:none!important}}")
         return "".join(out)
 
 
-def counter(d, P, n, final, x, y, key, size, fill, unit, anchor="end", tail=None):
+def own_rate(P, n, cols):
+    """A fill for a block too big for the shared sequence to say anything about: whole rows, spread evenly over
+    every step of the clock, so its count is its own and never echoes a smaller row's."""
+    rows, K = -(-n // cols), len(P.steps)
+    return [min(n, cols * -(-(k * rows) // K)) for k in range(1, K + 1)]
+
+
+def counter(d, P, n, final, x, y, key, size, fill, unit, anchor="end", tail=None, seq=None):
     """A number that counts up while its n squares pour (unit = what one square is worth). At rest it is `final`.
-    tail = (text, font key, size, fill) set straight after the number, so a unit word follows it as it grows."""
-    done = P.done(n)
+    tail = (text, font key, size, fill) set straight after the number, so a unit word follows it as it grows.
+    seq = the squares on show after each step, where that is not the shared sequence (see own_rate)."""
+    steps = seq or P.steps
+    done = next(k for k, c in enumerate(steps, 1) if c >= n)
 
     def one(v, cls, opacity=None):
         if not tail:
@@ -796,14 +806,15 @@ def counter(d, P, n, final, x, y, key, size, fill, unit, anchor="end", tail=None
 
     out = [one(final, P.cls("t", done))]
     for k in range(done):
-        out.append(one(P.steps[k - 1] * unit if k else 0, P.cls("c", k), 0))
+        out.append(one(steps[k - 1] * unit if k else 0, P.cls("c", k), 0))
     return "".join(out)
 
 
-def squares(d, t, P, key, x, y, cols, pitch, n):
+def squares(d, t, P, key, x, y, cols, pitch, n, seq=None, soft=0.0):
     """n unit squares from (x, y), cols to a row, in the way's own hue, arriving on the shared clock.
-    Drawn as runs of colour under a grid of page-coloured gaps: 1,480 squares cost a few dozen rectangles."""
-    hue = t["hue"][key]
+    Drawn as runs of colour under a grid of page-coloured gaps: 1,480 squares cost a few dozen rectangles.
+    soft = how far the hue is drawn back towards the page, for a block that must not outshout the others."""
+    hue = mix(t["hue"][key], t["page"], soft)
     rows = -(-n // cols)
     w, h, gap = min(n, cols) * pitch, rows * pitch, round(pitch * 0.17, 2)
     g0, g1 = (mix(hue, "#ffffff", 0.16), mix(hue, t["page"], 0.16)) if t["dark"] else (mix(hue, "#ffffff", 0.16), mix(hue, "#000000", 0.06))
@@ -825,10 +836,11 @@ def squares(d, t, P, key, x, y, cols, pitch, n):
 
     out = ['<g fill="%s" opacity="%s">%s</g>' % (t["line"], "0.55" if t["dark"] else "0.6", seg(0, n)), '<g fill="url(#g-%s)">' % key]
     prev = 0
-    for k, c in enumerate(P.steps, 1):
+    for k, c in enumerate(seq or P.steps, 1):
         if prev >= n:
             break
-        out.append('<g class="%s">%s</g>' % (P.cls("s", k), seg(prev, min(c, n))))
+        if min(c, n) > prev:
+            out.append('<g class="%s">%s</g>' % (P.cls("s", k), seg(prev, min(c, n))))
         prev = min(c, n)
     out.append('</g><rect x="%s" y="%s" width="%s" height="%s" fill="url(#q-%s)"/>' % (f(x), f(y), f(w), f(h), key))
     return "".join(out), h
@@ -841,7 +853,8 @@ def chart_alt():
     sub, thr = reddit_jobs()
     return ("One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. "
             "headless-kit (github-stars): %s tokens, %s bytes, %s. Page text: %s tokens, %d times the kit. "
-            "Browser snapshot: %s tokens, %s bytes, %s, %d times the kit. Raw HTML: %s tokens, %s times the kit. "
+            "Browser snapshot: %s tokens, %s bytes, %s, %d times the kit. The page's whole markup, which no browser tool "
+            "hands an agent, shown for scale: %s tokens, %s times the kit. "
             "For 1,000 checks at USD %g a million input tokens (the list price of %s on %s): %s with the kit, %s with the browser snapshot. "
             "Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in %s tokens (%s) and %s tokens (%s). "
             "Measured %s on Windows 11, Node %s, Playwright's headless Chromium %s, %s tokeniser, one run each."
@@ -855,8 +868,8 @@ def chart_notes(c, m):
     return ("Measured %s on Windows 11, Node %s, Playwright's headless Chromium %s; one run each. Tokens counted with OpenAI's %s; "
             "Claude's own count will differ, so bytes are given too. Cost is arithmetic, not a measurement: the tokens at USD %g a "
             "million input tokens, the list price of %s on %s. The comparison is conservative: the browser's page held 30 stars, "
-            "the kit checked %d. Browser time runs from opening the page to the last capture and leaves out starting the browser; "
-            "kit time is the whole command."
+            "the kit checked %d. Browser time runs from opening the page to the last capture, includes the script's fixed "
+            "1.5 s pause for the page to settle and leaves out starting the browser; kit time is the whole command."
             % (m["date"], m["node"], m["chromium"], m["tok"], PRICE["usd_per_mtok"], PRICE["model"], PRICE["read"], c["kit"]["stars_checked"]))
 
 
@@ -897,8 +910,15 @@ def hero_band(d, t, P, c, ways, x, y, w, h):
     for way, label, key, ink, ms, yy in rows:
         b.append(chip(lx, yy - 12, 12, hue[key]))
         b.append(d.text(label, lx + 21, yy, "sans", 17, t["text"])[0])
-        for xx, v in zip(cx, (num(way["tokens"]), num(way["bytes"]), secs(ms), usd(way["tokens"]))):
-            b.append(d.text(v, xx, yy, "sansb", 20, ink, anchor="end")[0])
+        # the kit's row is whole from the start. The browser's tokens count with the headline, and its other cells
+        # arrive with the totals, so a frame caught mid-pour never shows figures that disagree.
+        late = P.cls("t", P.done(snap["n"])) if key == "snap" else None
+        if late:
+            b.append(counter(d, P, way["n"], way["tokens"], cx[0], yy, "sansb", 20, ink, kit["tokens"]))
+        else:
+            b.append(d.text(num(way["tokens"]), cx[0], yy, "sansb", 20, ink, anchor="end")[0])
+        for xx, v in zip(cx[1:], (num(way["bytes"]), secs(ms), usd(way["tokens"]))):
+            b.append(d.text(v, xx, yy, "sansb", 20, ink, anchor="end", cls=late)[0])
     b.append('<path d="M%s %sH%s" stroke="%s"/>' % (f(lx), f(y + 123.5), f(right), t["line"]))
     less = ("%d times" % round(c["ratio"]["by_tokens"]), "%d times" % round(c["ratio"]["by_bytes"]),
             secs(c["browser"]["ms"] - c["kit"]["ms"]), "about $%d" % round((snap["tokens"] - kit["tokens"]) * PRICE["usd_per_mtok"] / 1000))
@@ -958,17 +978,19 @@ def chart(theme):
         s2, ww = d.text(w_["what"], pad + 21 + nw + 10, y + 27, "sans", 16, t["muted"])
         assert pad + 21 + nw + 10 + ww <= sx - 14, w_["name"]
         b.append(s + s2)
-        b.append(counter(d, P, w_["n"], w_["tokens"], pad, y + 55, "sansb", 22, ink, unit, anchor="start", tail=(" tokens", "sans", 16, t["muted"])))
+        seq = own_rate(P, w_["n"], cols) if w_["key"] == "html" else None
+        late = None if w_["key"] == "kit" else P.cls("t", next(k for k, v in enumerate(seq or P.steps, 1) if v >= w_["n"]))
+        b.append(counter(d, P, w_["n"], w_["tokens"], pad, y + 55, "sansb", 22, ink, unit, anchor="start", tail=(" tokens", "sans", 16, t["muted"]), seq=seq))
         mx = pad + 196
         if w_["key"] == "kit":
             b.append(d.text("one square", mx, y + 55, "sansb", 17, t["text"])[0])
         else:
-            b.append(d.text("%s times the kit" % num(w_["n"]), mx, y + 55, "sansb", 17, t["text"], cls=P.cls("t", P.done(w_["n"])))[0])
-        b.append(d.text("%s bytes  ·  %s per 1,000 checks" % (num(w_["bytes"]), usd(w_["tokens"])), pad, y + 77, "sans", 16, t["muted"])[0])
+            b.append(d.text("%s times the kit" % num(w_["n"]), mx, y + 55, "sansb", 17, t["text"], cls=late)[0])
+        b.append(d.text("%s bytes  ·  %s per 1,000 checks" % (num(w_["bytes"]), usd(w_["tokens"])), pad, y + 77, "sans", 16, t["muted"], cls=late)[0])
         if w_["key"] == "kit":
             b.append('<circle class="pu" cx="%s" cy="%s" r="34" fill="url(#glow-kit)"/>' % (f(sx + pitch / 2), f(y + 18 + pitch / 2)))
             b.append(d.text("the whole answer", sx + pitch + 12, y + 18 + pitch - 1, "sansb", 16, ink)[0])
-        s, sh = squares(d, t, P, w_["key"], sx, y + 18, cols, pitch, w_["n"])
+        s, sh = squares(d, t, P, w_["key"], sx, y + 18, cols, pitch, w_["n"], seq=seq, soft=0.45 if w_["key"] == "html" else 0.0)
         b.append(s)
         if w_["key"] == "html":
             note = wrap_text("Whichever of the three the browser hands over, the agent still has to compare the list with what it saw "
@@ -1004,67 +1026,27 @@ MOTION = (".pu{animation:pu 2.6s ease-in-out infinite alternate}@keyframes pu{fr
 
 
 def header(theme, mobile=False):
-    """The strip at the top of the page: the name, what the kit is, the measured pair, and the line the measuring
-    script printed for that job. Every string is in a file in this repo."""
-    t, m = th(theme), cmp_meta()
-    hue, ink = t["hue"], t["ink"]
-    c, ways = stars_ways()
-    kit, snap = ways[0], ways[2]
-    cap = read_capture("compare.txt")
-    said = next(l for l in cap if "the kit seeded" in l).split()
-    assert said[0] == "ok" and any("%s tokens" % num(snap["tokens"]) in l for l in cap) and any(": %d tokens" % kit["tokens"] in l for l in cap)
-    said = " ".join(said[1:])
-    assert c["controls"][0]["ok"] and said == "%s: %s" % (c["controls"][0]["name"], c["controls"][0]["detail"])
+    """The strip that stands in for the README's H1: the mark, the name and what the kit is. It carries no figures;
+    the chart below it owns the numbers."""
+    t = th(theme)
     what = "%d small tools and hooks for coding agents" % STATS["items"]["total"]
-    # the script's own line says "seeded, then polled"; the same facts in a reader's words, each checked against the file
-    assert "nothing new" in c["kit"]["tool"] and c["kit"]["exit"] == 0 and "%d stars checked" % c["kit"]["stars_checked"] in said
-    gloss = "%d stars checked, nothing new, exit %d" % (c["kit"]["stars_checked"], c["kit"]["exit"])
-    W, H = (720, 366) if mobile else (1200, 152)
-    d = Doc(W, H, "headless-kit", "headless-kit: %s. The same GitHub stars check cost %s tokens as a browser snapshot and %d tokens "
-            "with the kit, measured %s. The measuring script reported: ok, %s." % (what, num(snap["tokens"]), kit["tokens"], m["date"], said))
+    W, H = (720, 150) if mobile else (1200, 112)
+    d = Doc(W, H, "headless-kit", "headless-kit: %s." % what)
     d.css.append(MOTION)
     b = d.body
-    px = 36 if mobile else 32
-    tile, ty = (60, 30) if mobile else (52, 30)
-    b.append(band(d, t, 0, 0, W, H, glow=(px + 370, 196, 220, 90) if mobile else (W - 120, 62, 190, 80)))
-    b.append('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s" stroke="%s"/>' % (f(px + .5), f(ty + .5), tile - 1, tile - 1, f(tile * 0.23), t["page"], t["line"]))
+    px, tile, ty = (36, 60, 28) if mobile else (32, 52, 30)
     k = tile / 52
+    b.append(band(d, t, 0, 0, W, H, glow=(px + tile / 2, ty + tile / 2, 190, 90)))
+    b.append('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s" stroke="%s"/>' % (f(px + .5), f(ty + .5), tile - 1, tile - 1, f(tile * 0.23), t["page"], t["line"]))
     b.append('<path d="M%s %sl%s %sl%s %s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"/>'
-             % (f(px + 14 * k), f(ty + 17 * k), f(10 * k), f(9 * k), f(-10 * k), f(9 * k), hue["kit"], f(3.6 * k)))
-    b.append('<rect class="bl" x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s"/>' % (f(px + 28 * k), f(ty + 32.4 * k), f(11 * k), f(3.6 * k), f(1.8 * k), hue["kit"]))
-
-    def stat(label, key, tokens, x, y, anchor, big, small, lab):
-        parts = [(num(tokens), "sansb", big, ink[key]), (" tokens", "sans", small, t["muted"])]
-        s, w = runs(d, parts, x, y, anchor)
-        left = x - w if anchor == "end" else x
-        lb = y - big * 0.74 - lab * 0.8
-        return (chip(left, lb - lab * 0.73, lab * 0.76, hue[key]) + d.text(label, left + lab * 1.25, lb, "sans", lab, t["muted"])[0] + s), w
-
+             % (f(px + 14 * k), f(ty + 17 * k), f(10 * k), f(9 * k), f(-10 * k), f(9 * k), t["hue"]["kit"], f(3.6 * k)))
+    b.append('<rect class="bl" x="%s" y="%s" width="%s" height="%s" rx="%s" fill="%s"/>' % (f(px + 28 * k), f(ty + 32.4 * k), f(11 * k), f(3.6 * k), f(1.8 * k), t["hue"]["kit"]))
     if mobile:
         b.append(d.text("headless-kit", px + tile + 18, 74, "monob", 44, t["text"])[0])
-        b.append(d.text(what, px, 132, "sans", 22.5, t["muted"])[0])
-        b.append(stat("Browser snapshot", "snap", snap["tokens"], px, 226, "start", 42, 22, 20)[0])
-        b.append(stat("headless-kit", "kit", kit["tokens"], px + 334, 226, "start", 42, 22, 20)[0])
-        b.append('<path d="M%s 252.5H%s" stroke="%s"/>' % (px, W - px, t["line"]))
-        head, _, rest = said.partition(": ")
-        b.append(d.text("ok", px, 284, "monob", 18.5, t["ok"])[0])
-        b.append(d.text(head + ":", px + 4 * mono_cell(18.5), 284, "mono", 18.5, t["text"])[0])
-        b.append(d.text(rest, px + 4 * mono_cell(18.5), 310, "mono", 18.5, t["text"])[0])
-        b.append(d.text("In plain words: %s." % gloss, px, 346, "sans", 20.5, t["muted"])[0])
+        b.append(d.text(what, px, 124, "sans", 22.5, t["muted"])[0])
     else:
         b.append(d.text("headless-kit", px + tile + 18, 62, "monob", 38, t["text"])[0])
         b.append(d.text(what, px + tile + 19, 88, "sans", 17.5, t["muted"])[0])
-        s, w = stat("headless-kit", "kit", kit["tokens"], W - px, 88, "end", 36, 17, 15)
-        b.append(s)
-        dx = W - px - w - 30
-        b.append('<path d="M%s 34V90" stroke="%s"/>' % (f(dx + .5), t["line"]))
-        b.append(stat("Browser snapshot", "snap", snap["tokens"], dx - 30, 88, "end", 36, 17, 15)[0])
-        b.append('<path d="M%s 107.5H%s" stroke="%s"/>' % (px, W - px, t["line"]))
-        b.append(d.text("ok", px, 134, "monob", 15, t["ok"])[0])
-        s, sw = d.text(said, px + 4 * mono_cell(15), 134, "mono", 15, t["text"])
-        s2, gw = d.text("In plain words: %s.  %s" % (gloss, m["date"]), W - px, 134, "sans", 15.5, t["muted"], anchor="end")
-        assert px + 4 * mono_cell(15) + sw + 24 <= W - px - gw, (sw, gw)
-        b.append(s + s2)
     write("header-%s%s.svg" % ("m-" if mobile else "", theme), d)
 
 
@@ -1111,7 +1093,10 @@ def chart_mobile(theme):
         yy = ty + 48 + i * 44
         b.append('<path d="M%s %sH%s" stroke="%s" stroke-opacity=".7"/>' % (f(nx), f(yy - 29.5), f(right), t["line"]))
         b.append(d.text(label, nx, yy, "sans", 22, t["muted"])[0])
-        b.append(d.text(bv, cx[0], yy, "sansb", 25, ink["snap"], anchor="end")[0])
+        if i == 0:                                     # the browser's tokens count with the headline; the rest arrive with the totals
+            b.append(counter(d, P, snap["n"], snap["tokens"], cx[0], yy, "sansb", 25, ink["snap"], unit))
+        else:
+            b.append(d.text(bv, cx[0], yy, "sansb", 25, ink["snap"], anchor="end", cls=P.cls("t", P.done(snap["n"])))[0])
         b.append(d.text(kv, cx[1], yy, "sansb", 25, ink["kit"], anchor="end")[0])
         b.append(d.text(lv, cx[2], yy, "sansb", 23, t["text"], anchor="end", cls=P.cls("t", P.done(snap["n"])))[0])
     y = hy + hh + 54
@@ -1129,17 +1114,19 @@ def chart_mobile(theme):
         s2, ww = d.text(w_["what"], pad + 27 + nw + 12, y + 41, "sans", 21.5, t["muted"])
         assert pad + 27 + nw + 12 + ww <= W - pad, w_["name"]
         b.append(s + s2)
-        b.append(counter(d, P, w_["n"], w_["tokens"], pad, y + 84, "sansb", 31, ink[w_["key"]], unit, anchor="start", tail=(" tokens", "sans", 22, t["muted"])))
+        seq = own_rate(P, w_["n"], cols) if w_["key"] == "html" else None
+        late = None if w_["key"] == "kit" else P.cls("t", next(k for k, v in enumerate(seq or P.steps, 1) if v >= w_["n"]))
+        b.append(counter(d, P, w_["n"], w_["tokens"], pad, y + 84, "sansb", 31, ink[w_["key"]], unit, anchor="start", tail=(" tokens", "sans", 22, t["muted"]), seq=seq))
         if w_["key"] == "kit":
             b.append(d.text("one square", W - pad, y + 84, "sansb", 23, t["text"], anchor="end")[0])
         else:
-            b.append(d.text("%s times the kit" % num(w_["n"]), W - pad, y + 84, "sansb", 23, t["text"], anchor="end", cls=P.cls("t", P.done(w_["n"])))[0])
-        b.append(d.text("%s bytes  ·  %s per 1,000 checks" % (num(w_["bytes"]), usd(w_["tokens"])), pad, y + 116, "sans", 21.5, t["muted"])[0])
+            b.append(d.text("%s times the kit" % num(w_["n"]), W - pad, y + 84, "sansb", 23, t["text"], anchor="end", cls=late)[0])
+        b.append(d.text("%s bytes  ·  %s per 1,000 checks" % (num(w_["bytes"]), usd(w_["tokens"])), pad, y + 116, "sans", 21.5, t["muted"], cls=late)[0])
         sy = y + 136
         if w_["key"] == "kit":
             b.append('<circle class="pu" cx="%s" cy="%s" r="42" fill="url(#glow-kit)"/>' % (f(pad + pitch / 2), f(sy + pitch / 2)))
             b.append(d.text("the whole answer", pad + pitch + 14, sy + pitch, "sansb", 21.5, ink["kit"])[0])
-        s, sh = squares(d, t, P, w_["key"], pad, sy, cols, pitch, w_["n"])
+        s, sh = squares(d, t, P, w_["key"], pad, sy, cols, pitch, w_["n"], seq=seq, soft=0.45 if w_["key"] == "html" else 0.0)
         b.append(s)
         y = sy + sh + 26
     y += 12
@@ -1190,23 +1177,50 @@ def read_capture(name):
     return open(os.path.join(HERE, name), encoding="utf-8").read().rstrip("\n").split("\n")
 
 
-def term_rows(lines, t, cols):
-    """Capture lines coloured whole, then wrapped at the terminal width: [(runs, source line index)]."""
-    rows = []
+def soft_chunks(ln, cols):
+    """Where a long line breaks: after a comma in a line of JSON, otherwise after a space, and in the middle of a
+    word only when neither is in reach. [(start, end)] character ranges, each at most cols wide."""
+    out, a = [], 0
+    while len(ln) - a > cols:
+        window = ln[a:a + cols]
+        cut = window.rfind(",") + 1 if ln.startswith("{") else 0
+        if cut < cols * 0.35:
+            cut = window.rfind(" ") + 1
+        if cut < cols * 0.35 and ln[a + cols] == " ":
+            cut = cols + 1                                 # the space hangs one cell past the edge, where it shows nothing
+        if cut < cols * 0.35:
+            cut = cols
+        out.append((a, a + cut))
+        a += cut
+    return out + [(a, len(ln))]
+
+
+def term_rows(lines, t, cols, keep=None):
+    """Capture lines coloured whole, then wrapped to the terminal width at soft_chunks' breaks. Returns
+    ([(runs, source line index)], {source line index: [where each of its rows starts]}).
+    keep = {line index: [(start, end)]}: on those lines everything outside the kept ranges is dimmed."""
+    rows, starts = [], {}
     for i, ln in enumerate(lines):
-        row, n = [], 0
+        colours = []
         for text, colour in spans(ln, t):
-            while text:
-                take = text[:cols - n]
-                row.append((take, colour))
-                n += len(take)
-                text = text[len(take):]
-                if n == cols:
-                    rows.append((row, i))
-                    row, n = [], 0
-        if row or not ln:
+            colours += [colour] * len(text)
+        assert len(colours) == len(ln), ln
+        if keep and i in keep:
+            on = set()
+            for a, e in keep[i]:
+                on.update(range(a, e))
+            colours = [c if j in on else t["faint"] for j, c in enumerate(colours)]
+        starts[i] = []
+        for a, e in soft_chunks(ln, cols):
+            starts[i].append(a)
+            row = []
+            for j in range(a, e):
+                if row and row[-1][1] == colours[j]:
+                    row[-1] = (row[-1][0] + ln[j], colours[j])
+                else:
+                    row.append((ln[j], colours[j]))
             rows.append((row, i))
-    return rows
+    return rows, starts
 
 
 def mono_cell(size):
@@ -1292,7 +1306,7 @@ def lane_kit(d, t, x, P):
     o = [lane_head(d, t, "kit", "Through headless-kit", "One command. github-stars asks GitHub's public API and keeps its own record")]
     size, lh = 12.8, 19
     cols = int((540 - 28) / mono_cell(size))
-    cmd = term_rows([x["cmd"]], t, cols)
+    cmd = term_rows([x["cmd"]], t, cols)[0]
     out = [(spans("{" + ln, t)[1:] if i else spans(ln, t), i) for i, ln in enumerate(x["flow"])]     # coloured as the JSON it is
     assert all(len(ln) <= cols for ln in x["flow"]) and len(cmd) + len(out) <= 6, (len(cmd), len(out))
     o.append('<rect x=".5" y="68.5" width="539" height="208" rx="10" fill="%s" stroke="%s"/>' % (t["term"], t["line"]))
@@ -1325,9 +1339,7 @@ def lane_kit(d, t, x, P):
     return "".join(o), 444
 
 
-EXPLAINER_NOTE = ("Every figure here is the measured run, where the record sat in a long temporary folder and the line was %d bytes. "
-                  "The line shown is the same command recorded with a short path (%d bytes), on four lines so it reads. "
-                  "\"pushed\" counts alerts sent; ntfy is a free phone-notification service.")
+EXPLAINER_NOTE = "The line is shown with a short file path (%d bytes). In the measured run it was %d bytes."
 
 
 def explainer_alt():
@@ -1353,7 +1365,8 @@ def explainer(theme, mobile=False):
     lane = lambda svg, ox, oy, k: '<g transform="translate(%s %s) scale(%s)">%s</g>' % (f(ox), f(oy), f(k, 4), svg)
     done = P.cls("t", P.done(snap["n"]))
     assert len(x["line"].encode("utf-8")) < kit["bytes"]
-    note = EXPLAINER_NOTE % (kit["bytes"], len(x["line"].encode("utf-8")))
+    note = EXPLAINER_NOTE % (len(x["line"].encode("utf-8")), kit["bytes"])
+    note_ink = mix(t["muted"], t["text"], 0.5)                  # a step up from muted: this is the caveat, it has to read
     if mobile:
         W, pad, k = 720, 40, 640 / 540.0
         head = [d.text("Your agent needs to know", pad, 62, "sans", 22, t["muted"])[0]]
@@ -1374,7 +1387,7 @@ def explainer(theme, mobile=False):
                 d.text("less to read, for the same answer", pad, y3 + 130, "sansb", 27, t["text"])[0]]
         y = y3 + 176
         for ln in wrap_text(note, "sans", 20, W - 2 * pad):
-            foot.append(d.text(ln, pad, y, "sans", 20, t["muted"])[0])
+            foot.append(d.text(ln, pad, y, "sans", 20, note_ink)[0])
             y += 28
         H = int(y + 14)
     else:
@@ -1392,12 +1405,9 @@ def explainer(theme, mobile=False):
                 d.text("times", pad + w99 + 10, y3 + 62, "sansb", 30, t["hue"]["kit"])[0],
                 d.text("less to read,", pad + w99 + 104, y3 + 46, "sansb", 19, t["text"])[0],
                 d.text("for the same answer", pad + w99 + 104, y3 + 70, "sansb", 19, t["text"])[0]]
-        lines = wrap_text(note, "sans", 15, 660)
-        assert len(lines) <= 4, len(lines)
-        y = y3 + 55 - (len(lines) - 1) * 10.5 + 5
-        for ln in lines:
-            foot.append(d.text(ln, 496, y, "sans", 15, t["muted"])[0])
-            y += 21
+        s, nw = d.text(note, W - pad, y3 + 60, "sans", 16, note_ink, anchor="end")
+        assert W - pad - nw >= 496, nw
+        foot.append(s)
         H = int(y3 + 104)
     d.w, d.h = W, H
     d.css.append(P.css())
@@ -1425,7 +1435,12 @@ def shot(name, capture, title, notes, theme, mobile=False, accent="kit"):
         W, size, lh, pad, top, cols = 1040, 14.5, 23, 22, 38, 64
         cell = mono_cell(size)
         Wt = int(pad * 2 + cols * cell + 0.5)
-    rows = term_rows(lines, t, cols)
+    keep = {}                                          # a note may ask for the fields it does not mention to be dimmed
+    for n in notes:
+        for sub in n.get("keep", []):
+            src = next(i for i in range(n["lines"][0], n["lines"][1] + 1) if sub in lines[i])
+            keep.setdefault(src, []).append((lines[src].index(sub), lines[src].index(sub) + len(sub)))
+    rows, starts = term_rows(lines, t, cols, keep)
     first, count = {}, {}
     for ri, (_, src) in enumerate(rows):
         first.setdefault(src, ri)
@@ -1473,13 +1488,13 @@ def shot(name, capture, title, notes, theme, mobile=False, accent="kit"):
         a, z = n["lines"]
         for sub in n.get("mark", []):
             src = next(i for i in range(a, z + 1) if sub in lines[i])
-            pos, left = lines[src].index(sub), len(sub)
-            while left:                                # a marked run may wrap across terminal rows
-                r, c = first[src] + pos // cols, pos % cols
-                take = min(left, cols - c)
-                b.append('<rect x="%s" y="%s" width="%s" height="%d" rx="3" fill="%s" fill-opacity="%s"/>'
-                         % (f(pad + c * cell - 2), f(body_top + r * lh + 2), f(take * cell + 4), lh - 4, ac, f(t["mark"])))
-                pos, left = pos + take, left - take
+            pos = lines[src].index(sub)
+            st = starts[src] + [len(lines[src])]
+            for ci in range(len(st) - 1):              # a marked run may wrap across terminal rows
+                a_, e_ = max(pos, st[ci]), min(pos + len(sub), st[ci + 1])
+                if a_ < e_:
+                    b.append('<rect x="%s" y="%s" width="%s" height="%d" rx="3" fill="%s" fill-opacity="%s"/>'
+                             % (f(pad + (a_ - st[ci]) * cell - 2), f(body_top + (first[src] + ci) * lh + 2), f((e_ - a_) * cell + 4), lh - 4, ac, f(t["mark"])))
         if mobile:
             b.append(badge(W - pad - 12, cy, 13, k, 16))
             b.append(badge(pad + 15, ty + 14, 15, k, 18))
@@ -1530,6 +1545,7 @@ def shots(theme, mobile=False):
     assert (j["verdict"], code) == ("stop", 4)
     shot("shot-memory-gate", "shot-memory-gate.txt", "memory-gate, a real run on Windows 11, 14 Nov 2026", [
         dict(lines=(1, 1), mark=['"verdict":"%s"' % j["verdict"], '"pct":%s' % j["pct"], '"advice":"start nothing heavy'],
+             keep=['"verdict":"%s"' % j["verdict"], '"pct":%s' % j["pct"], '"advice":"%s"' % j["advice"]],
              head="One line instead of a process list",
              body="%d bytes: a verdict, the reading behind it (%s%% of this machine's memory is committed) and advice in plain words."
                   % (len(mg[1].encode("utf-8")), j["pct"])),
@@ -1583,9 +1599,9 @@ def kit():
         ("Spend your model allowance well", [
             ("model-router", "tools/routing/model-router", T, "Picks which of your model plans should take the next task: the one about to lose the most unspent allowance.",
              "nothing extra", ""),
-            ("anthropic-pool", "tools/routing/anthropic-pool", T, "Spends Anthropic API credit from several keys, soonest to expire first, at Batch half price by default, with hard caps.",
+            ("anthropic-pool", "tools/routing/anthropic-pool", T, "Spends Anthropic API credit from several keys, soonest to expire first, with hard caps. By default it uses Batch, Anthropic's half-price queue for work that can wait.",
              "API keys", ""),
-            ("cli-rotator", "tools/routing/cli-rotator", T, "Runs a task on whichever of your agent CLI accounts has quota left, and rests an account that hits its limit.",
+            ("cli-rotator", "tools/routing/cli-rotator", T, "Runs a task on whichever of your command-line (CLI) agent accounts has quota left, and rests an account that hits its limit.",
              "signed-in CLI accounts", ""),
         ]),
         ("Hear back from background agents, and check what they did", [
@@ -1614,39 +1630,65 @@ def kit():
 
 
 FEATURED = ("reddit-pull", "github-stars", "memory-gate", "bin-dump", "plan-depth", "presence")
-TOOL_HUE = {"github-stars": "kit", "reddit-pull": "reddit", "memory-gate": "mem"}
+
+
+TOOL_HUE = {"reddit-pull": "reddit", "github-stars": "kit", "memory-gate": "mem", "bin-dump": "mem",
+            "plan-depth": "hook", "presence": "hook"}     # the dot is the colour of the tool's group in the table
+
+
+def card_runs():
+    """What each of the six cards shows that the table does not: the command that runs the tool and, only where a
+    run was recorded beside this script, what that run said. (command, line under it, was it recorded)"""
+    rp, gs, mg = (read_capture("shot-%s.txt" % n) for n in ("reddit-pull", "github-stars", "memory-gate"))
+    cmd = lambda cap: next(l for l in cap if l.startswith("$ node "))[2:]
+    posts = json.loads(next(l for l in rp if l.startswith("{")))["subs"][0]["posts"]
+    stars = json.loads(gs[3])
+    gate = json.loads(mg[1])
+    assert stars["new"] == [] and gs[-1] == "0" and mg[3] == "4" and gate["advice"].startswith("start nothing heavy")
+    return {
+        "reddit-pull": (cmd(rp), "%d posts found, %s bytes saved to disk" % (posts, num(int(rp[-1].split()[0]))), True),
+        "github-stars": (cmd(gs), "%d stars checked, nothing new, exit %s" % (stars["read"], gs[-1]), True),
+        "memory-gate": (cmd(mg), "verdict \"%s\", exit %s: start nothing heavy" % (gate["verdict"], mg[3]), True),
+        # the three below are the commands their own READMEs give; no run of them is recorded here, so no result
+        "bin-dump": ('node tools/guards/bin-dump/bin-dump.mjs ./old-build --who my-agent --why "stale build output" --dry-run',
+                     "--dry-run says what would move and moves nothing", False),
+        "plan-depth": ("node hooks/plan-depth/plan-depth.mjs --check plan.md", "lists the gaps in a plan file, as JSON", False),
+        "presence": ("/away\n/back", "typed in Claude Code: one when you leave, one when you return", False),
+    }
 
 
 def tool_card(theme, name, kind, text, needs, fact):
-    """One tool as a 400 px card in the manner of GitHub's own pinned-repository cards: name, sentence, footer."""
+    """One tool as a 400 px card: its dot and name, the command that runs it and, where one was recorded, what the
+    run said. The table above the cards says what each tool is for; the card does not say it again."""
     t = th(theme)
-    W, H, px = 400, 150, 18
-    d = Doc(W, H, name, "%s (%s). %s Needs: %s." % (name, kind, text, needs))
+    W, H, px = 400, 158, 18
+    command, under, recorded = card_runs()[name]
+    d = Doc(W, H, name, "%s (%s). Run it: %s. %s%s. Needs: %s."
+            % (name, kind, command.replace("\n", " and "), "Recorded run: " if recorded else "", under, needs))
     b = d.body
+    accent = TOOL_HUE[name]
     b.append('<rect x=".5" y=".5" width="%d" height="%d" rx="8" fill="%s" stroke="%s"/>' % (W - 1, H - 1, t["page"], t["line"]))
-    accent = TOOL_HUE.get(name)                    # the three measured tools wear the hue they have in the chart
-    if accent:
-        b.append(chip(px, 21.5, 12, t["hue"][accent]))
-    b.append(d.text(name, px + (20 if accent else 0), 33, "monob", 16, t["link"])[0])
-    b.append(d.text(kind, W - px, 32, "sans", 12, t["muted"], anchor="end")[0])
-    body = wrap_text(text, "sans", 13.5, W - 2 * px)
-    if len(body) > 1 and " " not in body[-1]:      # no single word left alone on the last line,
-        for _ in range(3):                         # and no line that ends on "a", "the", "not a"
-            head, _, tail = body[-2].rpartition(" ")
-            body[-2:] = [head, tail + " " + body[-1]]
-            if head.rpartition(" ")[2].lower() not in ("a", "an", "the", "not", "of", "to", "and", "or"):
-                break
-    assert len(body) <= 4, (name, len(body))
-    y = 60
-    for ln in body:
-        b.append(d.text(ln, px, y, "sans", 13.5, t["text"])[0])
-        y += 19.5
-    s, w = d.text("Needs: " + needs, px, H - 16, "sans", 12, t["muted"])
+    b.append(chip(px, 19.5, 12, t["hue"][accent]))
+    b.append(d.text(name, px + 20, 31, "monob", 16, t["link"])[0])
+    b.append(d.text(kind, W - px, 30, "sans", 12, t["muted"], anchor="end")[0])
+    size, lh = 11.5, 16
+    cols = int((W - 2 * px - 22) / mono_cell(size))
+    rows = [part[a:e] for part in command.split("\n") for a, e in soft_chunks(part, cols)]
+    assert len(rows) <= 3, (name, len(rows))
+    bh = 3 * lh + 13                                   # one box size on every card, so the six line up as a grid
+    b.append('<rect x="%s" y="44.5" width="%s" height="%s" rx="6" fill="%s" stroke="%s"/>' % (f(px + .5), W - 2 * px - 1, bh, t["term"], t["line"]))
+    y = 44 + 18
+    for ln in rows:
+        b.append(d.text(ln, px + 11, y, "mono", size, t["text"])[0])
+        y += lh
+    y = 44 + bh + 20
+    if recorded:
+        s, w = runs(d, [("Recorded run:  ", "sans", 12.5, t["muted"]), (under, "sansb", 12.5, t["ink"][accent])], px, y)
+    else:
+        s, w = d.text(under, px, y, "sans", 12.5, t["muted"])
+    assert px + w <= W - px and y <= H - 30, (name, w, y)
     b.append(s)
-    if fact:
-        s, w2 = d.text(fact, W - px, H - 16, "sansb", 12, t["ink"][accent] if accent else t["text"], anchor="end")
-        assert px + w + 12 <= W - px - w2, name
-        b.append(s)
+    b.append(d.text("Needs: " + needs, px, H - 14, "sans", 12, t["muted"])[0])
     write("cards/%s-%s.svg" % (name, theme), d)
 
 
@@ -1709,7 +1751,8 @@ def round2():
         shots(theme, mobile=True)
         for _, items in kit():
             for name, path, kind, text, needs, fact in items:
-                tool_card(theme, name, kind, text, needs, fact)
+                if name in FEATURED:
+                    tool_card(theme, name, kind, text, needs, fact)
     readme_blocks()
 
 
