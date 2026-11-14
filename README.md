@@ -20,7 +20,7 @@ Cheap, agent-first tools with no browser, no pop-up windows and, for 15 of the 2
   <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="assets/chart-m-dark.svg">
   <source media="(max-width: 767px)" srcset="assets/chart-m-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="assets/chart-dark.svg">
-  <img src="assets/chart-light.svg" width="100%" alt="One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. headless-kit (github-stars): 72 tokens, 202 bytes, 0.28 s. Page text: 1,251 tokens, 17 times the kit. Browser snapshot: 7,136 tokens, 20,481 bytes, 3.9 s, 99 times the kit. The page's whole markup, which no browser tool hands an agent, shown for scale: 106,529 tokens, 1,480 times the kit. For 1,000 checks at USD 4 a million input tokens (the list price of Claude Opus 5.5 on 14 Nov 2026): $0.29 with the kit, $28.54 with the browser snapshot. Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in 131 tokens (100 posts found and saved to disk) and 67 tokens (the whole thread saved to disk). Measured 14 Nov 2026 on Windows 11, Node 22.17, Playwright's headless Chromium 153, o200k_base tokeniser, one run each.">
+  <img src="assets/chart-light.svg" width="100%" alt="One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. headless-kit (github-stars): 72 tokens, 202 bytes, 0.28 s. Page text: 1,251 tokens, 17 times the kit. Browser snapshot: 7,136 tokens, 20,481 bytes, 3.9 s, 99 times the kit. The page's whole markup (the raw HTML, which browser tools do not return by default), shown for scale: 106,529 tokens, 1,480 times the kit. For 1,000 checks at USD 4 a million input tokens (the list price of Claude Opus 5.5 on 14 Nov 2026): $0.29 with the kit, $28.54 with the browser snapshot. Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in 131 tokens (100 posts found and saved to disk) and 67 tokens (the whole thread saved to disk). Measured 14 Nov 2026 on Windows 11, Node 22.17, Playwright's headless Chromium 153, o200k_base tokeniser, one run each.">
 </picture>
 <!-- fig-chart:end -->
 </p>
@@ -91,7 +91,7 @@ They install as a plugin. In Claude Code:
 /plugin install instruction-keeper@headless-kit
 ```
 
-## How it stays cheap
+## What it is
 
 headless-kit is one repo of 20 small tools for people who build with a coding agent such as Claude Code. Each tool
 does a job your agent would otherwise do the expensive way, by driving a browser or by reading pages of command
@@ -123,7 +123,7 @@ a time, while the kit's one line is already there.
 ## Real output, explained
 
 Three runs from 14 Nov 2026, recorded by [`assets/src/capture.sh`](assets/src/capture.sh) and drawn exactly as
-printed. Long lines wrap the way a terminal wraps them.
+printed. Long lines are wrapped to fit; no character is changed.
 
 `memory-gate` answers a yes-or-no question with a verdict and an exit code. Nothing in it needs interpreting.
 
@@ -132,7 +132,7 @@ printed. Long lines wrap the way a terminal wraps them.
   <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="assets/shot-memory-gate-m-dark.svg">
   <source media="(max-width: 767px)" srcset="assets/shot-memory-gate-m-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="assets/shot-memory-gate-dark.svg">
-  <img src="assets/shot-memory-gate-light.svg" width="100%" alt="Terminal, a real run: node tools/guards/memory-gate/memory-gate.mjs. Notes: One line instead of a process list: 286 bytes: a verdict, the reading behind it (96.2% of this machine's memory is committed) and advice in plain words. Exit code 4 means stop: Your agent branches on the number and never has to parse the text: 0 go ahead, 3 one heavy job at a time, 4 stop, 5 could not tell.">
+  <img src="assets/shot-memory-gate-light.svg" width="100%" alt="Terminal, a real run: node tools/guards/memory-gate/memory-gate.mjs. Notes: One line instead of a process list: 287 bytes: a verdict, the reading behind it (96.2% of this machine's memory is committed) and advice in plain words. Exit code 4 means stop: Your agent branches on the number and never has to parse the text: 0 go ahead, 3 one heavy job at a time, 4 stop, 5 could not tell.">
 </picture>
 <!-- fig-shot-memory-gate:end -->
 
@@ -143,7 +143,7 @@ printed. Long lines wrap the way a terminal wraps them.
   <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="assets/shot-reddit-pull-m-dark.svg">
   <source media="(max-width: 767px)" srcset="assets/shot-reddit-pull-m-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="assets/shot-reddit-pull-dark.svg">
-  <img src="assets/shot-reddit-pull-light.svg" width="100%" alt="Terminal, a real run: node tools/research/reddit-pull/reddit-pull.mjs --sub rust --after 2026-11-12 --max-pages 1 --out out; wc -c out/*. Notes: Progress, for a person watching: It goes to a separate stream (stderr). The measurements on this page count it as read all the same. The answer is this one line: 148 bytes of JSON: the pull worked, 100 posts were found, and these files hold them. In the measured run the line was 326 bytes, because that run wrote to a temporary folder and the longer folder name appears three times. The posts themselves are on disk: 141,097 bytes the agent did not have to read. It opens the title list (16,175 bytes), or searches the full file, only when the job needs it.">
+  <img src="assets/shot-reddit-pull-light.svg" width="100%" alt="Terminal, a real run: node tools/research/reddit-pull/reddit-pull.mjs --sub rust --after 2026-11-12 --max-pages 1 --out out; wc -c out/*. Notes: Progress, for a person watching: It goes to a separate stream (stderr). The measurements on this page count it as read all the same. The answer is this one line: 149 bytes of JSON: the pull worked, 100 posts were found, and these files hold them. In the measured run the line was 326 bytes, because that run wrote to a temporary folder and the longer folder name appears three times. The posts themselves are on disk: 141,097 bytes the agent did not have to read. It opens the title list (16,175 bytes), or searches the full file, only when the job needs it.">
 </picture>
 <!-- fig-shot-reddit-pull:end -->
 
@@ -209,8 +209,8 @@ Good ones to start with:
 <a href="tools/trackers/github-stars"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/github-stars-dark.svg"><img src="assets/cards/github-stars-light.svg" width="400" alt="github-stars (command-line tool). Run it: node tools/trackers/github-stars/github-stars.mjs --user antirez --state stars.json. Recorded run: 100 stars checked, nothing new, exit 0. Needs: nothing extra (token optional)."></picture></a>
 <a href="tools/guards/memory-gate"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/memory-gate-dark.svg"><img src="assets/cards/memory-gate-light.svg" width="400" alt="memory-gate (command-line tool). Run it: node tools/guards/memory-gate/memory-gate.mjs. Recorded run: verdict &quot;stop&quot;, exit 4: start nothing heavy. Needs: nothing extra."></picture></a>
 <a href="tools/guards/bin-dump"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/bin-dump-dark.svg"><img src="assets/cards/bin-dump-light.svg" width="400" alt="bin-dump (command-line tool). Run it: node tools/guards/bin-dump/bin-dump.mjs ./old-build --who my-agent --why &quot;stale build output&quot; --dry-run. --dry-run says what would move and moves nothing. Needs: nothing extra."></picture></a>
-<a href="hooks/plan-depth"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/plan-depth-dark.svg"><img src="assets/cards/plan-depth-light.svg" width="400" alt="plan-depth (Claude Code hook). Run it: node hooks/plan-depth/plan-depth.mjs --check plan.md. lists the gaps in a plan file, as JSON. Needs: Claude Code."></picture></a>
-<a href="hooks/presence"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/presence-dark.svg"><img src="assets/cards/presence-light.svg" width="400" alt="presence (Claude Code hook). Run it: /away and /back. typed in Claude Code: one when you leave, one when you return. Needs: Claude Code."></picture></a>
+<a href="hooks/plan-depth"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/plan-depth-dark.svg"><img src="assets/cards/plan-depth-light.svg" width="400" alt="plan-depth (Claude Code hook). Run it: node hooks/plan-depth/plan-depth.mjs --check plan.md. Lists the gaps in a plan file, as JSON. Needs: Claude Code."></picture></a>
+<a href="hooks/presence"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/presence-dark.svg"><img src="assets/cards/presence-light.svg" width="400" alt="presence (Claude Code hook). Run it: /away and /back. Type in Claude Code: one when you leave, one when you return. Needs: Claude Code."></picture></a>
 </p>
 <!-- cards:end -->
 
@@ -219,7 +219,8 @@ Good ones to start with:
 Each job was done twice on the same machine: once through a browser, the way an agent does it without the kit, and
 once with the kit's tool. "Agent reads" is everything that lands in the agent's context. For a command that is all
 of its output. For a browser it depends on the tool, so the stars page is counted three ways: the accessibility
-snapshot, which is what a browser tool such as Playwright MCP hands over; the words on the page; and the page's
+snapshot, which is what a browser tool such as Playwright MCP (the browser server many coding agents plug in)
+hands over; the words on the page; and the page's
 whole markup.
 
 | Job | Route | What was run | Agent reads | Times more than the kit |
@@ -227,7 +228,7 @@ whole markup.
 | Has `antirez` starred anything new? | headless-kit | `github-stars --user antirez --state <file>`, 100 stars checked | 72 tokens (202 B) | |
 | | Browser, snapshot | `github.com/antirez?tab=stars`, one page of 30 stars | 7,136 tokens (20,481 B) | **99.1** |
 | | Browser, words on the page | the same page | 1,251 tokens (4,223 B) | 17.4 |
-| | Whole markup, for scale (no browser tool hands this to an agent) | the same page | 106,529 tokens (272,987 B) | 1,480 |
+| | Whole markup, for scale (the raw HTML; browser tools do not return it by default) | the same page | 106,529 tokens (272,987 B) | 1,480 |
 | What is new in r/rust? | headless-kit | `reddit-pull --sub rust --after 2026-11-12 --max-pages 1`, 100 posts | 131 tokens (363 B) | |
 | | Browser | `reddit.com/r/rust/new/` | Blocked: "You've been blocked by network security." 0 posts | no ratio |
 | Read one thread and its 148 comments | headless-kit | `reddit-pull --thread 1xukrfr` | 67 tokens (191 B) | |
@@ -262,11 +263,11 @@ What these numbers do not show:
   full thread. It can search them or read a part instead, which is why they are files.
 - The shots above are a second run of the same commands with short file paths, so their lines are shorter. The
   measured runs wrote to a long temporary folder, and its name is repeated in the answer: the stars line is 202
-  bytes here and 142 in the shot, the `reddit-pull` line 326 bytes here and 148 in the shot. (The 363 in the table
+  bytes here and 143 in the shot, the `reddit-pull` line 326 bytes here and 149 in the shot. (The 363 in the table
   adds the 37-byte progress line.)
 
 `memory-gate` is not in the chart, because its worth is a verdict and an exit code, not a saving. Its shot is a
-second run too: 286 bytes and 96.2% of memory committed there, 287 bytes and 96.6% in the measured run.
+second run too: 96.2% of memory committed there, 96.6% in the measured run. The line is 287 bytes in both.
 
 The rest of the numbers on this page come from `node scripts/measure.mjs`, which has no dependencies and writes only
 to a temp folder. They were taken in a Linux container (4 vCPU, 15.7 GB, Node 22.23.4) on 14 Nov 2026; the raw
