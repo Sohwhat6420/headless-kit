@@ -9,9 +9,6 @@
 
 Cheap, agent-first tools with no browser, no pop-up windows and, for 15 of the 20, no keys.
 
-One GitHub stars check cost an agent 72 tokens with the kit, where the browser's page cost 7,136 (measured
-14 Nov 2026). A token is what a model reads and bills by: a short word, or part of a long one.
-
 [![test](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml/badge.svg)](https://github.com/Sohwhat6420/headless-kit/actions/workflows/test.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 ![Dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
@@ -23,26 +20,12 @@ One GitHub stars check cost an agent 72 tokens with the kit, where the browser's
   <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="assets/chart-m-dark.svg">
   <source media="(max-width: 767px)" srcset="assets/chart-m-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="assets/chart-dark.svg">
-  <img src="assets/chart-light.svg" width="100%" alt="One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. headless-kit (github-stars): 72 tokens, 202 bytes, 0.28 s. Page text: 1,251 tokens, 17 times the kit. Browser snapshot: 7,136 tokens, 20,481 bytes, 3.9 s, 99 times the kit. Raw HTML: 106,529 tokens, 1,480 times the kit. For 1,000 checks at USD 4 a million input tokens (the list price of Claude Opus 5.5 on 14 Nov 2026): $0.29 with the kit, $28.54 with the browser snapshot. Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in 131 tokens (100 posts found and saved to disk) and 67 tokens (the whole thread saved to disk). Measured 14 Nov 2026 on Windows 11, Node 22.17, Playwright's headless Chromium 153, o200k_base tokeniser, one run each.">
+  <img src="assets/chart-light.svg" width="100%" alt="One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. headless-kit (github-stars): 72 tokens, 202 bytes, 0.28 s. Page text: 1,251 tokens, 17 times the kit. Browser snapshot: 7,136 tokens, 20,481 bytes, 3.9 s, 99 times the kit. The page's whole markup, which no browser tool hands an agent, shown for scale: 106,529 tokens, 1,480 times the kit. For 1,000 checks at USD 4 a million input tokens (the list price of Claude Opus 5.5 on 14 Nov 2026): $0.29 with the kit, $28.54 with the browser snapshot. Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in 131 tokens (100 posts found and saved to disk) and 67 tokens (the whole thread saved to disk). Measured 14 Nov 2026 on Windows 11, Node 22.17, Playwright's headless Chromium 153, o200k_base tokeniser, one run each.">
 </picture>
 <!-- fig-chart:end -->
 </p>
 
 <p align="center"><a href="#the-measurements">How this was measured, and its limits</a></p>
-
-headless-kit is one repo of 20 small tools for people who build with a coding agent such as Claude Code. Each tool
-does a job your agent would otherwise do the expensive way, by driving a browser or by reading pages of command
-output. It answers in one short line of JSON and an exit code, puts anything bulky in files, and leaves the agent to
-open those only if the job needs them.
-
-On the one job where both routes got an answer, the kit's was 99 times smaller than the page a browser tool hands
-over. On the two Reddit jobs the browser was blocked and read nothing, and the kit answered in 131 and 67 tokens.
-Those are three jobs on one day, not a promise about every tool.
-
-There is no browser, because the research tools read public archives and APIs directly, so nothing has to load,
-render or get past a bot check. Nothing pops up on your screen: every child process the tools start is hidden (26 of
-26 calls in the code). Fifteen of the 20 tools never touch a key, token or password; the other five read one from an
-environment variable or a file and never print it.
 
 ## Quick start
 
@@ -83,7 +66,7 @@ Before a build, a container or more than one subagent, run
 <summary>Another agent: Codex, Gemini CLI, Cursor</summary>
 <br>
 
-The 14 command-line tools work with any agent that can run a shell command. Put the same note in `AGENTS.md`, or
+The 14 command-line (CLI) tools work with any agent that can run a shell command. Put the same note in `AGENTS.md`, or
 wherever your agent keeps its standing instructions. The six hooks are for Claude Code only.
 
 </details>
@@ -108,6 +91,18 @@ They install as a plugin. In Claude Code:
 /plugin install instruction-keeper@headless-kit
 ```
 
+## How it stays cheap
+
+headless-kit is one repo of 20 small tools for people who build with a coding agent such as Claude Code. Each tool
+does a job your agent would otherwise do the expensive way, by driving a browser or by reading pages of command
+output. It answers in one short line of JSON and an exit code, puts anything bulky in files, and leaves the agent to
+open those only if the job needs them.
+
+There is no browser, because the research tools read public archives and APIs (the interfaces a site offers to
+programs) directly, so nothing has to load, render or get past a bot check. Nothing pops up on your screen: every
+child process the tools start is hidden (26 of 26 calls in the code). Fifteen of the 20 tools never touch a key,
+token or password; the other five read one from an environment variable or a file and never print it.
+
 ## One question, two routes
 
 Your agent needs to know whether an account has starred anything new on GitHub. It can drive a browser, or it can
@@ -124,8 +119,6 @@ a time, while the kit's one line is already there.
 </picture>
 <!-- fig-explainer:end -->
 </p>
-
-<p align="center"><i>Same question, same answer: nothing new. The browser's page cost 7,136 tokens to read; the kit's line cost 72.</i></p>
 
 ## Real output, explained
 
@@ -188,8 +181,8 @@ lives in its own folder with its own README and tests, and most are a single fil
 <tr><td><a href="tools/guards/detached-run">detached-run</a></td><td>Starts a Windows job that outlives the session that started it, and never flashes a window on your screen.</td><td>Windows</td></tr>
 <tr><td colspan="3"><b>Spend your model allowance well</b></td></tr>
 <tr><td><a href="tools/routing/model-router">model-router</a></td><td>Picks which of your model plans should take the next task: the one about to lose the most unspent allowance.</td><td>nothing extra</td></tr>
-<tr><td><a href="tools/routing/anthropic-pool">anthropic-pool</a></td><td>Spends Anthropic API credit from several keys, soonest to expire first, at Batch half price by default, with hard caps.</td><td>API keys</td></tr>
-<tr><td><a href="tools/routing/cli-rotator">cli-rotator</a></td><td>Runs a task on whichever of your agent CLI accounts has quota left, and rests an account that hits its limit.</td><td>signed-in CLI accounts</td></tr>
+<tr><td><a href="tools/routing/anthropic-pool">anthropic-pool</a></td><td>Spends Anthropic API credit from several keys, soonest to expire first, with hard caps. By default it uses Batch, Anthropic's half-price queue for work that can wait.</td><td>API keys</td></tr>
+<tr><td><a href="tools/routing/cli-rotator">cli-rotator</a></td><td>Runs a task on whichever of your command-line (CLI) agent accounts has quota left, and rests an account that hits its limit.</td><td>signed-in CLI accounts</td></tr>
 <tr><td colspan="3"><b>Hear back from background agents, and check what they did</b></td></tr>
 <tr><td><a href="tools/trackers/lane-mailbox">lane-mailbox</a></td><td>A private GitHub repo as a mailbox, so a lane (a background agent session) that cannot message you can still report back.</td><td>a GitHub token</td></tr>
 <tr><td><a href="tools/guards/lane-model-check">lane-model-check</a></td><td>Checks from the transcript that a lane ran on the model you asked for. Exit 1 means it did not.</td><td>nothing extra</td></tr>
@@ -212,12 +205,12 @@ Good ones to start with:
 
 <!-- cards:start (written by assets/src/build.py) -->
 <p>
-<a href="tools/research/reddit-pull"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/reddit-pull-dark.svg"><img src="assets/cards/reddit-pull-light.svg" width="400" alt="reddit-pull (command-line tool). Your agent reads Reddit with no browser, login or API key. Posts and comments go to files, and one line comes back. Needs: nothing extra."></picture></a>
-<a href="tools/trackers/github-stars"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/github-stars-dark.svg"><img src="assets/cards/github-stars-light.svg" width="400" alt="github-stars (command-line tool). Tells your agent when an account stars a new repo. Plain code does the comparing, so on a timer a check that finds nothing costs no model call. Needs: nothing extra (token optional)."></picture></a>
-<a href="tools/guards/memory-gate"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/memory-gate-dark.svg"><img src="assets/cards/memory-gate-light.svg" width="400" alt="memory-gate (command-line tool). One question before heavy work: is there memory for this? Your agent gets a verdict and an exit code, not a process list. Needs: nothing extra."></picture></a>
-<a href="tools/guards/bin-dump"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/bin-dump-dark.svg"><img src="assets/cards/bin-dump-light.svg" width="400" alt="bin-dump (command-line tool). Your agent deletes by moving files to a dated bin, with a note of who and why. You can restore any of it. Needs: nothing extra."></picture></a>
-<a href="hooks/plan-depth"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/plan-depth-dark.svg"><img src="assets/cards/plan-depth-light.svg" width="400" alt="plan-depth (Claude Code hook). Lists what a plan is missing at the moment Claude presents it. It warns and never approves for you. Needs: Claude Code."></picture></a>
-<a href="hooks/presence"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/presence-dark.svg"><img src="assets/cards/presence-light.svg" width="400" alt="presence (Claude Code hook). One switch for every session. At your desk, Claude asks you; away, it works on its best guess and logs each question. Needs: Claude Code."></picture></a>
+<a href="tools/research/reddit-pull"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/reddit-pull-dark.svg"><img src="assets/cards/reddit-pull-light.svg" width="400" alt="reddit-pull (command-line tool). Run it: node tools/research/reddit-pull/reddit-pull.mjs --sub rust --after 2026-11-12 --max-pages 1 --out out. Recorded run: 100 posts found, 141,097 bytes saved to disk. Needs: nothing extra."></picture></a>
+<a href="tools/trackers/github-stars"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/github-stars-dark.svg"><img src="assets/cards/github-stars-light.svg" width="400" alt="github-stars (command-line tool). Run it: node tools/trackers/github-stars/github-stars.mjs --user antirez --state stars.json. Recorded run: 100 stars checked, nothing new, exit 0. Needs: nothing extra (token optional)."></picture></a>
+<a href="tools/guards/memory-gate"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/memory-gate-dark.svg"><img src="assets/cards/memory-gate-light.svg" width="400" alt="memory-gate (command-line tool). Run it: node tools/guards/memory-gate/memory-gate.mjs. Recorded run: verdict &quot;stop&quot;, exit 4: start nothing heavy. Needs: nothing extra."></picture></a>
+<a href="tools/guards/bin-dump"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/bin-dump-dark.svg"><img src="assets/cards/bin-dump-light.svg" width="400" alt="bin-dump (command-line tool). Run it: node tools/guards/bin-dump/bin-dump.mjs ./old-build --who my-agent --why &quot;stale build output&quot; --dry-run. --dry-run says what would move and moves nothing. Needs: nothing extra."></picture></a>
+<a href="hooks/plan-depth"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/plan-depth-dark.svg"><img src="assets/cards/plan-depth-light.svg" width="400" alt="plan-depth (Claude Code hook). Run it: node hooks/plan-depth/plan-depth.mjs --check plan.md. lists the gaps in a plan file, as JSON. Needs: Claude Code."></picture></a>
+<a href="hooks/presence"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/cards/presence-dark.svg"><img src="assets/cards/presence-light.svg" width="400" alt="presence (Claude Code hook). Run it: /away and /back. typed in Claude Code: one when you leave, one when you return. Needs: Claude Code."></picture></a>
 </p>
 <!-- cards:end -->
 
@@ -234,7 +227,7 @@ whole markup.
 | Has `antirez` starred anything new? | headless-kit | `github-stars --user antirez --state <file>`, 100 stars checked | 72 tokens (202 B) | |
 | | Browser, snapshot | `github.com/antirez?tab=stars`, one page of 30 stars | 7,136 tokens (20,481 B) | **99.1** |
 | | Browser, words on the page | the same page | 1,251 tokens (4,223 B) | 17.4 |
-| | Browser, whole markup | the same page | 106,529 tokens (272,987 B) | 1,480 |
+| | Whole markup, for scale (no browser tool hands this to an agent) | the same page | 106,529 tokens (272,987 B) | 1,480 |
 | What is new in r/rust? | headless-kit | `reddit-pull --sub rust --after 2026-11-12 --max-pages 1`, 100 posts | 131 tokens (363 B) | |
 | | Browser | `reddit.com/r/rust/new/` | Blocked: "You've been blocked by network security." 0 posts | no ratio |
 | Read one thread and its 148 comments | headless-kit | `reddit-pull --thread 1xukrfr` | 67 tokens (191 B) | |
@@ -257,7 +250,8 @@ covers only what the agent reads back, not its own prompt or reply.
 
 What these numbers do not show:
 
-- Each job was run once. Pages change, so expect the figures to move.
+- These are three jobs on one day, each run once. They are not a promise about every tool, and pages change, so
+  expect the figures to move.
 - A blocked browser gets no ratio, because it read nothing. A signed-in browser was not tested.
 - The stars comparison is conservative, and not like for like. The browser saw one page of 30 stars and would still
   have to compare it with last time. The kit checked 100 against a saved list; a browser would need four pages to
@@ -271,10 +265,8 @@ What these numbers do not show:
   bytes here and 142 in the shot, the `reddit-pull` line 326 bytes here and 148 in the shot. (The 363 in the table
   adds the 37-byte progress line.)
 
-`memory-gate` is not in the chart, because its worth is a verdict and an exit code, not a saving. For scale, this is
-what the raw output costs if an agent does read it: `tasklist`, the whole process list, printed 44,150 bytes (10,301
-tokens) on this machine, and `memory-gate` answered in 287 bytes (88 tokens). An agent that knew a narrower command
-would read much less than the whole list, so the two are not like for like and no ratio is claimed.
+`memory-gate` is not in the chart, because its worth is a verdict and an exit code, not a saving. Its shot is a
+second run too: 286 bytes and 96.2% of memory committed there, 287 bytes and 96.6% in the measured run.
 
 The rest of the numbers on this page come from `node scripts/measure.mjs`, which has no dependencies and writes only
 to a temp folder. They were taken in a Linux container (4 vCPU, 15.7 GB, Node 22.23.4) on 14 Nov 2026; the raw
@@ -299,7 +291,8 @@ result is [`docs/measurements/2026-11-14.json`](docs/measurements/2026-11-14.jso
 
 ## Security
 
-- Fetched text is data, never instructions (OWASP LLM01, prompt injection). The tools write what they fetch to
+- Fetched text is data, never instructions. This is the guard against prompt injection, item 1 (LLM01) on OWASP's
+  list of the top risks for apps built on language models. The tools write what they fetch to
   files and report in a short JSON line, so fetched content stays apart from control output.
 - Keys come from an environment variable or a file you name, go only into the request or the child process that
   needs them, and are never printed, logged or stored. The tests check the output for them.
