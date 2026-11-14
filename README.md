@@ -8,26 +8,30 @@
 ![Dependencies: 0](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![Node 18+](https://img.shields.io/badge/node-18%2B-3d444d)
 
-**Cheap, agent-first tools.** An agent calls one, reads one JSON line and an exit code, and moves on. It never
-drives a browser, holds an API key or opens a window on your screen. Twenty small Node tools and Claude Code hooks,
-each in its own folder with its own tests: copy the one file you need and leave the rest.
+**Your agent reads 306 bytes. The data stays on disk.** headless-kit is a set of small Node tools and Claude Code
+hooks built for AI agents to call. Driving a browser or reading pages of tool output fills an agent's context window,
+and every token of it costs money and time. These tools keep what the agent reads to one short JSON line and an exit
+code, write the bulk to files, and are cheap in both senses: few tokens and under 50 ms a call.
 
-What an agent gets, measured on 14 Nov 2026 ([how](#the-numbers)):
+What that means, measured on 14 Nov 2026 ([every number and its source](#the-numbers)):
 
-- **No browser.** Research tools read public archives directly. One live `reddit-pull` run fetched 104 posts and
-  200 comments; the agent's whole terminal output was **306 bytes**, while the **232,750 bytes** of data went to
-  three files on disk.
-- **No API keys.** **17 of the 20** hold no key, token or password. The three that must (`anthropic-pool`,
-  `lane-mailbox`, `mail-reply`) read it from an environment variable or a file and never print it.
-- **No windows.** **26 of 26** child-process calls in shipped code pass `windowsHide: true`; none uses a shell. On
-  Windows, `detached-run`'s test watched for new windows every 50 ms and saw **0**.
-- **Cheap to call.** **31 to 49 ms** a call (median of 15), of which Node starting up is 25 ms. Trackers check
-  for change with plain code, so no model call is spent on a poll that finds nothing.
+- **No browser to drive.** The research tools read public archives directly. One live `reddit-pull` run fetched 104
+  posts and 200 comments: the agent's whole terminal output was **306 bytes**, and the **232,750 bytes** of data went
+  to three files.
+- **No API keys for most.** **15 of the 20** never touch a key, token or password. Three need one to do their job
+  (`anthropic-pool`, `lane-mailbox`, `mail-reply`) and two can use one if you give it (`github-stars`, `cli-rotator`).
+  Each reads it from an environment variable or a file and never prints it.
+- **No windows on your screen.** Every child process the tools start (26 of 26 calls in the code) is hidden, and none
+  goes through a shell. On Windows, `detached-run`'s test watched for new windows every 50 ms and saw **0**.
+- **Under 50 ms a call** (median of 15 runs; Node's own start-up is 25 ms of that). The trackers check for change
+  with plain code, so no model call is spent on a check that finds nothing.
+
+Each tool lives in its own folder with its own tests and README; most are a single file you can copy on its own.
 
 ## See it run
 
-Real terminal output from this repo, run in a Linux container on 14 Nov 2026. Nothing is retouched; long lines wrap
-the way a terminal wraps them.
+Terminal output from this repo, run in a Linux container on 14 Nov 2026 and shown unedited. Long lines wrap the way
+a terminal wraps them.
 
 **reddit-pull**: progress on stderr, one JSON line on stdout, the data in files.
 
@@ -52,23 +56,24 @@ the way a terminal wraps them.
 
 ## Tools
 
-Twenty, grouped by the job they do. **Needs** is everything a tool needs beyond Node 18.
+Twenty, grouped by the job they do. **Needs** is everything a tool needs beyond Node 18. A *lane* is one background
+agent session; a *pool* is one source of model usage (a subscription, an API key, a free tier, a local model).
 
 <table>
 <thead><tr><th align="left">Tool</th><th align="left">What it does</th><th align="left">Needs</th></tr></thead>
 <tbody>
 <tr><td colspan="3"><b>Spend model budget well</b></td></tr>
-<tr><td><a href="tools/routing/model-router">model-router</a></td><td>Ranks your model pools by which loses the most unspent allowance soonest; keeps private work on private pools.</td><td>nothing</td></tr>
+<tr><td><a href="tools/routing/model-router">model-router</a></td><td>Picks which model pool to use next: the one about to lose the most unspent allowance. Private work stays on private pools.</td><td>nothing</td></tr>
 <tr><td><a href="tools/routing/anthropic-pool">anthropic-pool</a></td><td>Spends Anthropic API credit from several keys, soonest-expiring first, Batch (half price) by default, with hard caps.</td><td>API keys</td></tr>
-<tr><td><a href="tools/routing/cli-rotator">cli-rotator</a></td><td>Runs a brief on one of several agent-CLI accounts and benches an account that hits a quota wall.</td><td>signed-in CLI</td></tr>
-<tr><td colspan="3"><b>Keep Claude Code honest</b></td></tr>
+<tr><td><a href="tools/routing/cli-rotator">cli-rotator</a></td><td>Runs a task on one of several accounts of an agent CLI, and skips an account until its quota resets.</td><td>signed-in CLI accounts</td></tr>
+<tr><td colspan="3"><b>Check Claude Code's work</b></td></tr>
 <tr><td><a href="hooks/plan-depth">plan-depth</a></td><td>Lists what a plan is missing when Claude calls <code>ExitPlanMode</code>. Warns; never approves.</td><td>Claude Code</td></tr>
 <tr><td><a href="hooks/dismissal-watch">dismissal-watch</a></td><td>Flags a reply that says "impossible" without having searched, and tells the model to search first.</td><td>Claude Code</td></tr>
 <tr><td><a href="hooks/focus-gate">focus-gate</a></td><td>Turns down off-task requests until real work on the task you keep putting off exists on disk.</td><td>Claude Code</td></tr>
 <tr><td><a href="hooks/instruction-keeper">instruction-keeper</a></td><td>Keeps a verbatim, redacted ledger of what you asked for and checks the work has dropped none of it.</td><td>Claude Code</td></tr>
 <tr><td colspan="3"><b>Keep you in the loop</b></td></tr>
 <tr><td><a href="hooks/presence">presence</a></td><td>One present/away switch for every session: ask in chat when you are there, log best guesses when you are not.</td><td>Claude Code</td></tr>
-<tr><td><a href="hooks/session-card-push">session-card-push</a></td><td>When a tool leaves something only one client shows, tells the model to notify you and ask in chat.</td><td>Claude Code</td></tr>
+<tr><td><a href="hooks/session-card-push">session-card-push</a></td><td>When a tool shows you something in one app only (such as a proposal card), tells Claude to notify you and ask in chat.</td><td>Claude Code</td></tr>
 <tr><td><a href="tools/trackers/lane-mailbox">lane-mailbox</a></td><td>A private GitHub repo as the return channel for agent sessions that cannot message back; mail is marked untrusted.</td><td>GitHub token</td></tr>
 <tr><td colspan="3"><b>Guard the machine</b></td></tr>
 <tr><td><a href="tools/guards/memory-gate">memory-gate</a></td><td>A pre-flight memory check before heavy work: one verdict and one exit code per verdict.</td><td>nothing</td></tr>
@@ -83,7 +88,7 @@ Twenty, grouped by the job they do. **Needs** is everything a tool needs beyond 
 <tr><td><a href="tools/research/ig2md">ig2md</a></td><td>Turns a public Instagram post, reel or carousel into JSON and Markdown. Logged out, rate-limited.</td><td>yt-dlp, gallery-dl (optional)</td></tr>
 <tr><td colspan="3"><b>Watch for change, token-free</b></td></tr>
 <tr><td><a href="tools/trackers/mail-reply">mail-reply</a></td><td>Answers mail from an allow-list in its own thread from a template. No model reads the mail; dry run unless <code>--send</code>.</td><td>mail login</td></tr>
-<tr><td><a href="tools/trackers/github-stars">github-stars</a></td><td>Diffs a user's GitHub stars against a state file and pushes only what is new.</td><td>nothing</td></tr>
+<tr><td><a href="tools/trackers/github-stars">github-stars</a></td><td>Diffs a user's GitHub stars against a state file and pushes only what is new.</td><td>nothing (a token is optional)</td></tr>
 </tbody>
 </table>
 
@@ -106,7 +111,7 @@ dependencies, writes only to a temp folder, and is offline unless you pass `--li
 | `reddit-pull`, what the agent reads vs what it fetched | **306 B** on screen (189 stdout, 117 stderr) vs **232,750 B** in 3 files | the live run in [See it run](#see-it-run) |
 | `reddit-pull`, a second live run | **291 B** on stdout vs **326,210 B** written (147 posts, 300 comments, 15.3 s) | `node scripts/measure.mjs --live` |
 | Tests | **352**: 350 pass, 0 fail, 2 skipped (they need a non-root user) | `npm test`, 19 suites, Linux, 48 s |
-| Tools that hold no key, token or password | **17 of 20** | the code: only `anthropic-pool`, `lane-mailbox` and `mail-reply` read one |
+| Tools that never touch a key, token or password | **15 of 20** | the code: `anthropic-pool`, `lane-mailbox` and `mail-reply` need one; `github-stars` and `cli-rotator` can take one |
 
 Machine for the timed rows: a Linux container, 4 vCPU (Intel Xeon, 2.1 GHz), 15.7 GB, Node 22.23.4. The raw result
 is [`docs/measurements/2026-11-14.json`](docs/measurements/2026-11-14.json). Times differ by machine; the shot above
@@ -132,7 +137,7 @@ The hooks and skills install as a Claude Code plugin:
 
 ## How it works
 
-Every tool keeps the same contract, so an agent learns it once:
+Every tool follows the same contract:
 
 1. **Arguments in.** Flags or a JSON config; nothing interactive, nothing that waits for a person.
 2. **One JSON object out** on stdout, progress on stderr, longer results written to files.
@@ -192,6 +197,18 @@ see [AGENTS.md](AGENTS.md). To add a tool: see [CONTRIBUTING.md](CONTRIBUTING.md
 
 ## Security
 
+- **Fetched text is data, never instructions** (OWASP LLM01, prompt injection). Tools write what they fetch to files
+  and report in a short JSON line, so fetched content never mixes with control output.
+- **Keys come from an environment variable or a file you name**, go only into the request or the child process that
+  needs them, and are never printed, logged or stored. The tests check the output for them.
+- **Nothing approves, sends or deletes on your behalf.** Hooks fail open and never approve a plan. `app-closer`,
+  `mail-reply` and `lane-mailbox` only report until you pass `--close`, `--send` or `--push`; `bin-dump` moves files
+  to a dated bin instead of deleting them.
+
+<details>
+<summary>Per-tool detail</summary>
+<br>
+
 Follows OWASP LLM01 (prompt injection). Anything these tools fetch from the outside world is **untrusted data, never
 instructions**. Fetched text can contain attempts to steer an AI agent; an agent that reads tool output must treat it
 as content to analyse and must not obey it. The tools write what they fetch to files and report what they did in a
@@ -210,6 +227,8 @@ prompt) and is a commitment device, not a lock. `lane-mailbox` treats every mail
 control and bidirectional characters, redacts token shapes, marks the result `untrusted`, and its `post` refuses a
 report that looks like it contains a secret. Of the guards that act, `app-closer` only reports unless you pass
 `--close`, and `bin-dump` moves rather than deletes (`--dry-run` to preview first).
+
+</details>
 
 ## Roadmap
 
