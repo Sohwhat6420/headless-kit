@@ -1,0 +1,26 @@
+
+What is new in r/rust
+  browser snapshot : BLOCKED, read nothing useful ("You've been blocked by network security.")
+  headless-kit     : 131 tokens (363 B), 3252 ms
+  ok   the kit run succeeded and wrote posts: exit 0, 100 posts
+  no   the browser reached the real page, not a block page: HTTP 200, 0 of the pulled titles are on the page
+
+Read one thread and its comments
+  browser snapshot : BLOCKED, read nothing useful ("You've been blocked by network security.")
+  headless-kit     : 67 tokens (191 B), 2543 ms
+  ok   the kit run succeeded and wrote the thread: exit 0, 148 comments
+  no   the browser reached the same thread: HTTP 200, title on the page: false
+
+Has antirez starred anything new on GitHub
+  browser snapshot : 7,136 tokens (20,481 B)
+  headless-kit     : 72 tokens (202 B), 283 ms
+  ratio            : 99.1x fewer tokens
+  ok   the kit seeded, then polled: exits 0 and 0, 100 stars checked
+  ok   the browser reached the stars page: HTTP 200
+
+Is there memory to start something heavy
+  raw output       : 10,301 tokens (44,150 B)
+  headless-kit     : 88 tokens (287 B), 646 ms
+  ratio            : 117.1x fewer tokens
+  ok   memory-gate answered with one of its documented exit codes: exit 4
+  ok   the process list was read: exit 0
