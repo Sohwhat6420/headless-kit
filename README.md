@@ -1,4 +1,6 @@
 <picture>
+  <source media="(max-width: 767px) and (prefers-color-scheme: dark)" srcset="assets/hero-m-dark.svg">
+  <source media="(max-width: 767px)" srcset="assets/hero-m-light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
   <img src="assets/hero-light.svg" width="100%" alt="headless-kit: cheap, agent-first tools that need no browser, no API keys and no windows. 20 tools and hooks, 0 dependencies, 26 of 26 child processes started with windowsHide, under 50 ms a call (median, measured). A terminal cycles through four real runs: reddit-pull prints one JSON line while 232,750 bytes go to disk; memory-gate answers ok with exit 0; lane-model-check catches a model mismatch with exit 1; plan-depth lists the gaps in a plan without approving it.">
 </picture>
