@@ -717,7 +717,7 @@ def stars_ways():
     ways = [dict(key="kit", name="headless-kit", what="one line of JSON", **k["agent_reads"]),
             dict(key="ptext", name="Page text", what="the words on the page", **b["page_text"]),
             dict(key="snap", name="Browser snapshot", what="what a browser tool returns", **b["snapshot"]),
-            dict(key="html", name="Whole markup", what="no browser tool hands this over", **b["html"])]
+            dict(key="html", name="Whole markup", what="the raw HTML, shown for scale", **b["html"])]
     for w in ways:
         w["n"] = round(w["tokens"] / unit)
     assert [w["n"] for w in ways] == [1, 17, 99, 1480], [w["n"] for w in ways]
@@ -853,8 +853,8 @@ def chart_alt():
     sub, thr = reddit_jobs()
     return ("One job read four ways, in the tokens an agent has to read. The job: has antirez starred anything new on GitHub. "
             "headless-kit (github-stars): %s tokens, %s bytes, %s. Page text: %s tokens, %d times the kit. "
-            "Browser snapshot: %s tokens, %s bytes, %s, %d times the kit. The page's whole markup, which no browser tool "
-            "hands an agent, shown for scale: %s tokens, %s times the kit. "
+            "Browser snapshot: %s tokens, %s bytes, %s, %d times the kit. The page's whole markup (the raw HTML, which browser tools do not "
+            "return by default), shown for scale: %s tokens, %s times the kit. "
             "For 1,000 checks at USD %g a million input tokens (the list price of %s on %s): %s with the kit, %s with the browser snapshot. "
             "Two Reddit jobs: the browser was blocked and read nothing; reddit-pull answered in %s tokens (%s) and %s tokens (%s). "
             "Measured %s on Windows 11, Node %s, Playwright's headless Chromium %s, %s tokeniser, one run each."
@@ -1364,8 +1364,8 @@ def explainer(theme, mobile=False):
     right, hr = lane_kit(d, t, x, P)
     lane = lambda svg, ox, oy, k: '<g transform="translate(%s %s) scale(%s)">%s</g>' % (f(ox), f(oy), f(k, 4), svg)
     done = P.cls("t", P.done(snap["n"]))
-    assert len(x["line"].encode("utf-8")) < kit["bytes"]
-    note = EXPLAINER_NOTE % (len(x["line"].encode("utf-8")), kit["bytes"])
+    assert len(x["line"].encode("utf-8")) + 1 < kit["bytes"]   # + 1: the line break, as the measurement counts it
+    note = EXPLAINER_NOTE % (len(x["line"].encode("utf-8")) + 1, kit["bytes"])
     note_ink = mix(t["muted"], t["text"], 0.5)                  # a step up from muted: this is the caveat, it has to read
     if mobile:
         W, pad, k = 720, 40, 640 / 540.0
@@ -1534,7 +1534,7 @@ def shots(theme, mobile=False):
         dict(lines=(2, 2), mark=['"posts":%d' % posts, '"failed_requests":0'], head="The answer is this one line",
              body="%d bytes of JSON: the pull worked, %d posts were found, and these files hold them. In the measured run the line was "
                   "%d bytes, because that run wrote to a temporary folder and the longer folder name appears three times."
-                  % (len(line.encode("utf-8")), posts, measured["stdout"]["bytes"])),
+                  % (len(line.encode("utf-8")) + 1, posts, measured["stdout"]["bytes"])),
         dict(lines=(6, 8), mark=[rp[-1].strip()], head="The posts themselves are on disk",
              body="%s bytes the agent did not have to read. It opens the title list (%s bytes), or searches the full file, only when the job needs it."
                   % (num(total), num(titles))),
@@ -1548,7 +1548,7 @@ def shots(theme, mobile=False):
              keep=['"verdict":"%s"' % j["verdict"], '"pct":%s' % j["pct"], '"advice":"%s"' % j["advice"]],
              head="One line instead of a process list",
              body="%d bytes: a verdict, the reading behind it (%s%% of this machine's memory is committed) and advice in plain words."
-                  % (len(mg[1].encode("utf-8")), j["pct"])),
+                  % (len(mg[1].encode("utf-8")) + 1, j["pct"])),
         dict(lines=(3, 3), head="Exit code %d means stop" % code,
              body="Your agent branches on the number and never has to parse the text: 0 go ahead, 3 one heavy job at a time, 4 stop, 5 could not tell."),
     ], theme, mobile, accent="mem")
@@ -1652,8 +1652,8 @@ def card_runs():
         # the three below are the commands their own READMEs give; no run of them is recorded here, so no result
         "bin-dump": ('node tools/guards/bin-dump/bin-dump.mjs ./old-build --who my-agent --why "stale build output" --dry-run',
                      "--dry-run says what would move and moves nothing", False),
-        "plan-depth": ("node hooks/plan-depth/plan-depth.mjs --check plan.md", "lists the gaps in a plan file, as JSON", False),
-        "presence": ("/away\n/back", "typed in Claude Code: one when you leave, one when you return", False),
+        "plan-depth": ("node hooks/plan-depth/plan-depth.mjs --check plan.md", "Lists the gaps in a plan file, as JSON", False),
+        "presence": ("/away\n/back", "Type in Claude Code: one when you leave, one when you return", False),
     }
 
 
