@@ -1,0 +1,231 @@
+{
+  "ok": true,
+  "measured_at": "2026-11-14T12:57:58.045Z",
+  "machine": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "node": "v22.17.0"
+  },
+  "tokenizer": "o200k_base (gpt-tokenizer)",
+  "browser": "Playwright, headless Chromium 153.0.8010.12",
+  "cases": [
+    {
+      "job": "What is new in r/rust",
+      "browser": {
+        "tool": "accessibility snapshot of the page (Playwright, headless Chromium)",
+        "url": "https://www.reddit.com/r/rust/new/",
+        "http": 200,
+        "title": "",
+        "ms": 2536,
+        "blocked": true,
+        "page_says": "You've been blocked by network security.",
+        "snapshot": {
+          "bytes": 260,
+          "tokens": 68
+        },
+        "page_text": {
+          "bytes": 143,
+          "tokens": 29
+        },
+        "html": {
+          "bytes": 189958,
+          "tokens": 87482
+        },
+        "posts_on_the_page_also_in_the_pull": 0
+      },
+      "kit": {
+        "tool": "reddit-pull --sub rust --after 2026-11-12 --max-pages 1",
+        "exit": 0,
+        "ms": 3252,
+        "agent_reads": {
+          "bytes": 363,
+          "tokens": 131
+        },
+        "stdout": {
+          "bytes": 326,
+          "tokens": 115
+        },
+        "posts": 100,
+        "on_disk": {
+          "titles_txt": {
+            "bytes": 16175,
+            "tokens": 5443
+          },
+          "posts_json_bytes": 124922
+        }
+      },
+      "controls": [
+        {
+          "name": "the kit run succeeded and wrote posts",
+          "ok": true,
+          "detail": "exit 0, 100 posts"
+        },
+        {
+          "name": "the browser reached the real page, not a block page",
+          "ok": false,
+          "detail": "HTTP 200, 0 of the pulled titles are on the page"
+        }
+      ],
+      "ratio": null
+    },
+    {
+      "job": "Read one thread and its comments",
+      "thread": {
+        "id": "1xukrfr",
+        "title": "Announcing Rust 1.100.0 | Rust Blog"
+      },
+      "browser": {
+        "tool": "accessibility snapshot of the page (Playwright, headless Chromium)",
+        "url": "https://www.reddit.com/r/rust/comments/1xukrfr/",
+        "http": 200,
+        "title": "",
+        "ms": 2362,
+        "blocked": true,
+        "page_says": "You've been blocked by network security.",
+        "snapshot": {
+          "bytes": 260,
+          "tokens": 68
+        },
+        "page_text": {
+          "bytes": 143,
+          "tokens": 29
+        },
+        "html": {
+          "bytes": 189958,
+          "tokens": 87482
+        }
+      },
+      "kit": {
+        "tool": "reddit-pull --thread 1xukrfr",
+        "exit": 0,
+        "ms": 2543,
+        "agent_reads": {
+          "bytes": 191,
+          "tokens": 67
+        },
+        "stdout": {
+          "bytes": 191,
+          "tokens": 67
+        },
+        "comments": 148,
+        "on_disk": {
+          "thread_json": {
+            "bytes": 56292,
+            "tokens": 20062
+          }
+        }
+      },
+      "controls": [
+        {
+          "name": "the kit run succeeded and wrote the thread",
+          "ok": true,
+          "detail": "exit 0, 148 comments"
+        },
+        {
+          "name": "the browser reached the same thread",
+          "ok": false,
+          "detail": "HTTP 200, title on the page: false"
+        }
+      ],
+      "ratio": null
+    },
+    {
+      "job": "Has antirez starred anything new on GitHub",
+      "browser": {
+        "tool": "accessibility snapshot of the page (Playwright, headless Chromium)",
+        "url": "https://github.com/antirez?tab=stars",
+        "http": 200,
+        "title": "antirez (Salvatore Sanfilippo) / Starred · GitHub",
+        "ms": 3902,
+        "snapshot": {
+          "bytes": 20481,
+          "tokens": 7136
+        },
+        "page_text": {
+          "bytes": 4223,
+          "tokens": 1251
+        },
+        "html": {
+          "bytes": 272987,
+          "tokens": 106529
+        },
+        "note": "one page of the list (30 repositories); the agent still has to compare it with what it saw last time"
+      },
+      "kit": {
+        "tool": "github-stars --user antirez (second poll, nothing new)",
+        "exit": 0,
+        "ms": 283,
+        "agent_reads": {
+          "bytes": 202,
+          "tokens": 72
+        },
+        "stdout": {
+          "bytes": 202,
+          "tokens": 72
+        },
+        "stars_checked": 100
+      },
+      "controls": [
+        {
+          "name": "the kit seeded, then polled",
+          "ok": true,
+          "detail": "exits 0 and 0, 100 stars checked"
+        },
+        {
+          "name": "the browser reached the stars page",
+          "ok": true,
+          "detail": "HTTP 200"
+        }
+      ],
+      "ratio": {
+        "by_tokens": 99.1,
+        "by_bytes": 101.4
+      }
+    },
+    {
+      "job": "Is there memory to start something heavy",
+      "raw": {
+        "tool": "tasklist (the process list an agent would otherwise read)",
+        "exit": 0,
+        "snapshot": {
+          "bytes": 44150,
+          "tokens": 10301
+        },
+        "lines": 568
+      },
+      "kit": {
+        "tool": "memory-gate",
+        "exit": 4,
+        "ms": 646,
+        "agent_reads": {
+          "bytes": 287,
+          "tokens": 88
+        },
+        "stdout": {
+          "bytes": 287,
+          "tokens": 88
+        },
+        "says": {
+          "verdict": "stop",
+          "pct": 96.6
+        }
+      },
+      "controls": [
+        {
+          "name": "memory-gate answered with one of its documented exit codes",
+          "ok": true,
+          "detail": "exit 4"
+        },
+        {
+          "name": "the process list was read",
+          "ok": true,
+          "detail": "exit 0"
+        }
+      ],
+      "ratio": {
+        "by_tokens": 117.1,
+        "by_bytes": 153.8
+      }
+    }
+  ]
+}

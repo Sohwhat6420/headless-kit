@@ -14,7 +14,7 @@
 ### Quick start (Node 18+, nothing to install)
 
 ```bash
-git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/reddit-pull
+git clone https://github.com/Sohwhat6420/headless-kit && cd headless-kit/tools/research/reddit-pull
 node reddit-pull.mjs --sub LocalLLaMA --after 2026-11-01 --grep "claude|agent" --out ./out
 node --test   # 8 offline tests against a local mock of the API
 ```
