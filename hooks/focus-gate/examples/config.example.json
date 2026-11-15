@@ -1,0 +1,61 @@
+{
+  "_about": "focus-gate config. Copy to ~/.claude/headless-kit/focus-gate/focus-gate.config.json (or point FOCUS_GATE_CONFIG at it), replace the example paths, then run `node focus-gate.mjs snapshot` once so today's file sizes become the baseline. Set done:true or remove an item once it is handed in.",
+  "baseline": "2026-11-11T00:00:00Z",
+  "rule": "refuse new discussions until I have started the work I keep putting off",
+  "dueSoonHours": 48,
+  "idleHours": 48,
+  "items": [
+    {
+      "id": "essay-1",
+      "title": "History essay, first draft",
+      "short": "Essay",
+      "due": "2026-11-15T23:59:00Z",
+      "from": "2026-11-12T00:00:00Z",
+      "next": "write the opening paragraph in essay-1.docx",
+      "paths": [{ "path": "/absolute/path/to/coursework/essay-1.docx", "size": 25025 }]
+    },
+    {
+      "id": "lab-3",
+      "title": "Programming lab 3",
+      "short": "Lab 3",
+      "due": "2026-11-17T14:00:00Z",
+      "next": "fill in Task 1 of lab3_starter.py",
+      "paths": ["/absolute/path/to/coursework/lab3_starter.py"]
+    },
+    {
+      "id": "theory-test",
+      "title": "Driving theory test practice",
+      "short": "Theory test",
+      "everyDays": 2,
+      "next": "one 30-minute practice paper, then record it with: focus-gate.mjs evidence theory-test \"<score>\""
+    },
+    {
+      "id": "blog",
+      "title": "Blog post you promised",
+      "short": "Blog post",
+      "from": "2026-11-20T00:00:00Z",
+      "next": "write 200 words of the draft",
+      "paths": ["/absolute/path/to/writing/blog-drafts"]
+    }
+  ],
+  "deadlinesFile": null,
+  "coveredIds": [],
+  "watch": {
+    "roots": ["/absolute/path/to/coursework"],
+    "extensions": [".py", ".ipynb", ".docx", ".xlsx", ".pptx", ".txt"],
+    "skipDirs": ["node_modules", ".git", "handouts"],
+    "maxDepth": 6,
+    "maxEntries": 20000,
+    "budgetMs": 100,
+    "cacheMinutes": 10
+  },
+  "allowed": [
+    "work on any item above",
+    "today's job applications",
+    "anything urgent (a real deadline today, safety, money, something breaking)",
+    "anything quick (answerable in a sentence or two, or one small action)"
+  ],
+  "ignorePatterns": ["^\\s*\\[nightly-digest\\]"],
+  "holdMaxHours": 3,
+  "pauseMaxHours": 4
+}

@@ -1,0 +1,4 @@
+$ node tools/guards/memory-gate/memory-gate.mjs
+{"verdict":"stop","pct":96.2,"usedBytes":78339452928,"limitBytes":81444044800,"usedGB":72.96,"limitGB":75.85,"thresholds":{"hot":75,"stop":85},"source":"win32-cim","basis":"commit","platform":"win32","advice":"start nothing heavy: free memory first (close idle apps and finished jobs)"}
+$ echo $?
+4

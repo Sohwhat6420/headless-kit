@@ -1,0 +1,13 @@
+$ node scripts/measure.mjs > measurements.json
+items: 14 tools + 6 hooks = 20
+dependencies: 0 across 21 package.json files
+child-process calls: 26 of 26 pass windowsHide: true; shell: true in 0
+timed (15 runs each, linux, Node v22.23.4):
+  node-startup       median   24.5 ms   stdout     0 B   exit 0
+  memory-gate        median   35.3 ms   stdout   324 B   exit 0
+  model-router       median   33.5 ms   stdout  1052 B   exit 0
+  lane-model-check   median   35.3 ms   stdout   226 B   exit 0
+  token-totals       median   47.7 ms   stdout  1941 B   exit 0
+  plan-depth (hook)  median   36.1 ms   stdout   855 B   exit 0
+$ echo $?
+0

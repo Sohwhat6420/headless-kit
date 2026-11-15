@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "node \"/absolute/path/to/headless-kit/hooks/focus-gate/focus-gate.mjs\"", "timeout": 5 }
+        ]
+      }
+    ]
+  }
+}

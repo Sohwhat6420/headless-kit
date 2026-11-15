@@ -1,0 +1,13 @@
+{
+  "name": "lane-mailbox",
+  "version": "0.1.0",
+  "description": "A private GitHub repo as a mailbox for agent sessions that cannot message back: an ETag poller whose exit wakes the orchestrator, and a post helper that refuses secrets. Node 18+, no dependencies.",
+  "type": "module",
+  "bin": { "lane-mailbox": "./lane-mailbox.mjs" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "author": "headless-kit contributors",
+  "repository": { "type": "git", "url": "git+https://github.com/Sohwhat6420/headless-kit.git", "directory": "tools/trackers/lane-mailbox" },
+  "keywords": ["github", "mailbox", "agents", "orchestrator", "cloud", "headless", "cli"]
+}

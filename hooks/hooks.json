@@ -1,5 +1,5 @@
 {
-  "description": "headless-kit command hooks: plan-depth, dismissal-watch, presence, session-card-push. Each fails open; see hooks/<name>/README.md.",
+  "description": "headless-kit command hooks: plan-depth, dismissal-watch, presence, session-card-push, focus-gate. Each fails open; see hooks/<name>/README.md.",
   "hooks": {
     "SessionStart": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
@@ -7,7 +7,8 @@
     "UserPromptSubmit": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-depth/plan-depth.mjs\"" }] },
       { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dismissal-watch/dismissal-watch.mjs\"" }] },
-      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] }
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/presence/presence.mjs\"", "timeout": 10 }] },
+      { "matcher": "", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/focus-gate/focus-gate.mjs\"", "timeout": 5 }] }
     ],
     "PreToolUse": [
       { "matcher": "ExitPlanMode", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-depth/plan-depth.mjs\"" }] }

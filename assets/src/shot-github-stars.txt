@@ -1,0 +1,6 @@
+$ node tools/trackers/github-stars/github-stars.mjs --user antirez --state stars.json
+{"ok":true,"user":"antirez","read":100,"seeded":true,"new":[],"pushed":{"ntfy":0,"webhook":0,"failed":0},"state":"stars.json","dryRun":false}
+$ node tools/trackers/github-stars/github-stars.mjs --user antirez --state stars.json
+{"ok":true,"user":"antirez","read":100,"seeded":false,"new":[],"pushed":{"ntfy":0,"webhook":0,"failed":0},"state":"stars.json","dryRun":false}
+$ echo $?
+0

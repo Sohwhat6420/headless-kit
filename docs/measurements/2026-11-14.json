@@ -1,0 +1,134 @@
+{
+  "measuredAt": "2026-11-14T11:31:18.645Z",
+  "machine": {
+    "platform": "linux",
+    "release": "6.18.44-fc-v470",
+    "node": "v22.23.4",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cpus": 4,
+    "memGB": 15.7
+  },
+  "items": {
+    "tools": 14,
+    "hooks": 6,
+    "total": 20
+  },
+  "dependencies": {
+    "packageJsonFiles": 21,
+    "total": 0,
+    "byFile": {}
+  },
+  "childProcessCalls": {
+    "total": 26,
+    "withWindowsHide": 26,
+    "withShellTrue": 0,
+    "missingWindowsHide": []
+  },
+  "timed": [
+    {
+      "id": "node-startup",
+      "note": "baseline: Node starting and exiting, no tool",
+      "runs": 15,
+      "medianMs": 25.4,
+      "minMs": 19.1,
+      "maxMs": 32,
+      "exitCode": 0,
+      "stdoutBytes": 0,
+      "oneJsonLine": null,
+      "inputBytes": null,
+      "ok": true
+    },
+    {
+      "id": "memory-gate",
+      "note": "a real reading of this machine",
+      "runs": 15,
+      "medianMs": 31.4,
+      "minMs": 26.3,
+      "maxMs": 38.6,
+      "exitCode": 0,
+      "stdoutBytes": 324,
+      "oneJsonLine": true,
+      "inputBytes": null,
+      "ok": true
+    },
+    {
+      "id": "model-router",
+      "note": "five example pools, bulk task",
+      "runs": 15,
+      "medianMs": 32.7,
+      "minMs": 28.6,
+      "maxMs": 35.8,
+      "exitCode": 0,
+      "stdoutBytes": 1052,
+      "oneJsonLine": true,
+      "inputBytes": 1629,
+      "ok": true
+    },
+    {
+      "id": "lane-model-check",
+      "note": "example transcript",
+      "runs": 15,
+      "medianMs": 34.6,
+      "minMs": 32.3,
+      "maxMs": 41.9,
+      "exitCode": 0,
+      "stdoutBytes": 226,
+      "oneJsonLine": true,
+      "inputBytes": 732,
+      "ok": true
+    },
+    {
+      "id": "token-totals",
+      "note": "fixture session logs",
+      "runs": 15,
+      "medianMs": 48.8,
+      "minMs": 45.6,
+      "maxMs": 70.6,
+      "exitCode": 0,
+      "stdoutBytes": 1941,
+      "oneJsonLine": true,
+      "inputBytes": 3565,
+      "ok": true
+    },
+    {
+      "id": "plan-depth (hook)",
+      "note": "PreToolUse ExitPlanMode on a thin plan, input on stdin",
+      "runs": 15,
+      "medianMs": 35,
+      "minMs": 28,
+      "maxMs": 36.8,
+      "exitCode": 0,
+      "stdoutBytes": 855,
+      "oneJsonLine": true,
+      "inputBytes": null,
+      "ok": true
+    }
+  ],
+  "live": {
+    "command": "node reddit-pull.mjs --sub rust --after 2026-11-11 --comments --max-pages 3 --out <tmp>/reddit",
+    "ms": 15308,
+    "exitCode": 0,
+    "stdoutBytes": 291,
+    "bytesWrittenToFiles": 326210,
+    "ratio": 1121,
+    "result": {
+      "ok": true,
+      "mode": "sub",
+      "out": "<tmp>/reddit",
+      "subs": [
+        {
+          "sub": "rust",
+          "posts": 147,
+          "comments": 300,
+          "files": [
+            "<tmp>/reddit/rust.posts.json",
+            "<tmp>/reddit/rust.titles.txt",
+            "<tmp>/reddit/rust.comments.json"
+          ]
+        }
+      ],
+      "failed_requests": 0
+    }
+  },
+  "ok": true
+}
