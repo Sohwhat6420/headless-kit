@@ -8,9 +8,9 @@ import { resolve } from 'node:path';
 
 const placeholder = /^(?:<[^>]+>|%[^%]+%|\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*|\{[^}]+\})$/;
 const profiles = [
-  ['windows-user-profile', /[a-z]:[\\/]+Users[\\/]+([^\\/\r\n"']+)[\\/]+/gi],
-  ['macos-user-profile', /(?<![A-Za-z]:)\/Users\/([^/\r\n"']+)\//g],
-  ['linux-user-profile', /\/home\/([^/\r\n"']+)\//g],
+  ['windows-user-profile', /[a-z]:[\\/]+Users[\\/]+([^\\/\r\n"']+)(?=[\\/\r\n"']|$)/gi],
+  ['macos-user-profile', /(?<![A-Za-z]:)\/Users\/([^/\r\n"']+)(?=[/\r\n"']|$)/g],
+  ['linux-user-profile', /\/home\/([^/\r\n"']+)(?=[/\r\n"']|$)/g],
 ];
 
 function text(bytes) {

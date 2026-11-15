@@ -28,7 +28,8 @@ test('scans tracked text, rejects profiles and optional username, and allows pla
     assert.deepEqual(run({ CHECK_PATHS_WINDOWS_USER: '' }).findings, []);
     assert.equal(run({ CHECK_PATHS_WINDOWS_USER: '' }).status, 0);
 
-    const paths = [bad.windows.join('\\'), bad.windows.join('/'), bad.windows.join('\\\\'), bad.macos.join('/'), bad.linux.join('/')];
+    const paths = [bad.windows.join('\\'), bad.windows.join('/'), bad.windows.join('\\\\'), bad.macos.join('/'), bad.linux.join('/'),
+      bad.windows.slice(0, -1).join('\\'), bad.macos.slice(0, -1).join('/'), bad.linux.slice(0, -1).join('/')];
     writeFileSync(join(dir, 'bad.txt'), paths.join('\n'));
     assert.equal(run({ CHECK_PATHS_WINDOWS_USER: '' }).status, 0, 'untracked files are excluded');
     git('add', 'bad.txt');
@@ -38,6 +39,9 @@ test('scans tracked text, rejects profiles and optional username, and allows pla
       ...[1, 2, 3].map((line) => ({ file: 'bad.txt', line, rule: 'windows-user-profile' })),
       { file: 'bad.txt', line: 4, rule: 'macos-user-profile' },
       { file: 'bad.txt', line: 5, rule: 'linux-user-profile' },
+      { file: 'bad.txt', line: 6, rule: 'windows-user-profile' },
+      { file: 'bad.txt', line: 7, rule: 'macos-user-profile' },
+      { file: 'bad.txt', line: 8, rule: 'linux-user-profile' },
     ]);
     assert.ok(!JSON.stringify(result).includes('fixture-user'), 'matched values are not printed');
 

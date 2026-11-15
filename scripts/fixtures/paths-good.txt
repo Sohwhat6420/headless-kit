@@ -5,3 +5,6 @@ C:/Users/<user>/project
 %USERPROFILE%\project
 $HOME/project
 os.homedir()
+C:\Users\<user>
+/Users/<user>
+/home/<user>
