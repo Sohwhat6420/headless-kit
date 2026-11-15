@@ -34,7 +34,7 @@ export const createEngine = (register, opts = {}) => {
     commands: [],
     skipped: [],
   }
-  const env = { HOME: '/home/t', ...(opts.env ?? {}) }
+  const env = { HOME: '/fixtures/keeper-home', ...(opts.env ?? {}) }
   const sid = opts.sessionId ?? 'sess-1'
   const fork = opts.fork ?? (() => ({ isAnswered: true, text: '[]', usage: {} }))
 

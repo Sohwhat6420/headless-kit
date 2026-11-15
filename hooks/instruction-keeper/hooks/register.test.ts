@@ -6,7 +6,7 @@ import type { MockClock } from 'claude-code/testing'
 
 const SID = 'sess-1'
 const T0 = 1_800_000_000_000
-const STATE = '/home/t/.claude/headless-kit/instruction-keeper'
+const STATE = '/fixtures/keeper-home/.claude/headless-kit/instruction-keeper'
 
 type Rig = {
   statuses: (string | undefined)[]
@@ -32,8 +32,8 @@ const val = (value: unknown): never => ({ value }) as never
 const rig = (on: On, o: RigOptions = {}): Rig => {
   const clock = mock.clock(on, { now: T0 })
   const r: Rig = { statuses: [], writes: {}, forks: [], promptsSeen: [], store: new Map(), clock, compactInstructions: [] }
-  mock.env(on, { HOME: '/home/t', ...(o.env ?? {}) })
-  // The engine hands fs.* an absolute host path (C:\home\t\x on Windows), so files are keyed by the posix spelling.
+  mock.env(on, { HOME: '/fixtures/keeper-home', ...(o.env ?? {}) })
+  // The engine hands fs.* an absolute host path (C:\fixtures\keeper-home\x on Windows), so files are keyed by the posix spelling.
   const posix = (p: string): string => p.replace(/\\/g, '/').replace(/^[A-Za-z]:(?=\/)/, '')
   on('store.get', (_$, e) => val(r.store.get(e.key)))
   on('store.set', (_$, e) => {
@@ -203,8 +203,8 @@ test('a failed fork falls back to classify; "something dropped" gives one cold i
 test('the cost guard stops the turn-complete check when ahead of the line', async ($, on) => {
   const resets = Math.round((T0 + 3.5 * 86_400_000) / 1000) // half the week gone: the line is at 50
   const r = rig(on, {
-    env: { INSTRUCTION_KEEPER_USAGE_FILE: '/home/t/usage.json' },
-    files: { '/home/t/usage.json': JSON.stringify({ rate_limits: { seven_day: { used_percentage: 80, resets_at: resets } } }) },
+    env: { INSTRUCTION_KEEPER_USAGE_FILE: '/fixtures/keeper-home/usage.json' },
+    files: { '/fixtures/keeper-home/usage.json': JSON.stringify({ rate_limits: { seven_day: { used_percentage: 80, resets_at: resets } } }) },
   })
   await say($, 'x')
   await reads($, 8)

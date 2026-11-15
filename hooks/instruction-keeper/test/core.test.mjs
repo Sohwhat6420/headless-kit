@@ -221,8 +221,8 @@ test('resolveConfig: defaults, type checks and the usage-file env override', () 
 })
 
 test('stateDir, paths, safeId, expandHome', () => {
-  assert.equal(stateDir('/home/u/'), '/home/u/.claude/headless-kit')
-  assert.equal(stateDir('/home/u', ' /srv/kit/ '), '/srv/kit')
+  assert.equal(stateDir('/fixtures/keeper-home/'), '/fixtures/keeper-home/.claude/headless-kit')
+  assert.equal(stateDir('/fixtures/keeper-home', ' /srv/kit/ '), '/srv/kit')
   assert.equal(stateDir(undefined), undefined)
   assert.deepEqual(paths('/k', 'a/b:c'), {
     config: '/k/instruction-keeper/config.json',
@@ -231,8 +231,8 @@ test('stateDir, paths, safeId, expandHome', () => {
   })
   assert.equal(paths(undefined, 's'), undefined)
   assert.equal(safeId(''), 'unknown')
-  assert.equal(expandHome('~/x.md', '/home/u/'), '/home/u/x.md')
-  assert.equal(expandHome('~', '/home/u'), '/home/u')
-  assert.equal(expandHome('/abs.md', '/home/u'), '/abs.md')
+  assert.equal(expandHome('~/x.md', '/fixtures/keeper-home/'), '/fixtures/keeper-home/x.md')
+  assert.equal(expandHome('~', '/fixtures/keeper-home'), '/fixtures/keeper-home')
+  assert.equal(expandHome('/abs.md', '/fixtures/keeper-home'), '/abs.md')
   assert.equal(expandHome('~/x', undefined), '~/x')
 })
