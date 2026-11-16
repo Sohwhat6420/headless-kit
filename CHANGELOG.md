@@ -4,6 +4,13 @@ All notable changes to headless-kit. Dates are UTC.
 
 ## Unreleased
 
+### Fixed
+
+- Visuals batch 1: full-bleed hero backgrounds, original demo files displayed
+  separately from illustrative art, corrected module availability captions and
+  local PNG references in the HTML companions instead of duplicate base64 images.
+  Offline asset checks cover dimensions, decoding, inventory, demo integrity and size.
+
 ### Added
 
 - **README:** a new front page. An animated hero (CSS only, light and dark, a still frame for reduced motion) that
