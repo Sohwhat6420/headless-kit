@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="914" height="334" viewBox="0 0 914 334" role="img" aria-label="reddit-pull · live run against Arctic Shift, 11 Nov 2026">
+<rect x="0.5" y="0.5" width="913" height="333" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h893a10 10 0 0 1 10 10v22h-913v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="457" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">reddit-pull · live run against Arctic Shift, 11 Nov 2026</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node reddit-pull.mjs --sub rust --after 2026-11-01 --comments --grep "windows|wasm" --out ./out2</tspan></text>
+<text x="20" y="86" xml:space="preserve">rust posts: 100 (back to 2026-11-09)</text>
+<text x="20" y="106" xml:space="preserve">rust posts: 200 (back to 2026-11-06)</text>
+<text x="20" y="126" xml:space="preserve">  … progress on stderr, 100 items per request …</text>
+<text x="20" y="146" xml:space="preserve">rust posts: 400 (back to 2026-11-02)</text>
+<text x="20" y="166" xml:space="preserve">rust comments: 2700 (back to 2026-11-01)</text>
+<text x="20" y="186" xml:space="preserve">{"ok":true,"mode":"sub","out":"./out2","subs":[{"sub":"rust","posts":55,"comments":69,"files":["out2\\ru</text>
+<text x="20" y="206" xml:space="preserve">  st.posts.json","out2\\rust.titles.txt","out2\\rust.comments.json"]}],"failed_requests":0}</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#7d8590"># exit 0 · 176 s · ~3,100 posts and comments scanned, 55 + 69 matched, no browser, no API key</tspan></text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">head -3 out2/rust.titles.txt | cut -c1-100</tspan></text>
+<text x="20" y="266" xml:space="preserve">2026-11-04 | 89 | 13 | project | Visual Editor in rust | https://www.reddit.com/r/rust/comme</text>
+<text x="20" y="286" xml:space="preserve">2026-11-08 | 62 | 5 | - | Actix Web Q4 Report | https://www.reddit.com/r/rust/comments/1xrct2i/</text>
+<text x="20" y="306" xml:space="preserve">2026-11-03 | 32 | 56 | seeking hel | If I had to learn a GUI for freelancing, which one should</text>
+</g>
+</svg>
