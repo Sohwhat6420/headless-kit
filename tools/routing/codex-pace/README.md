@@ -60,7 +60,9 @@ available reading already requires a hard-cap hold. Unknown output numbers are
 Session parsing searches for a key named `rate_limits`, including nested payloads.
 It selects the newest usable event by its `timestamp` (or `taken_at`), regardless
 of file name or modification time. Broken JSON lines and incomplete events are
-skipped. Both windows must be usable. Reset values may be ISO `resets_at`, epoch
+skipped. Events more than five minutes ahead of the routing clock are skipped
+before choosing the newest event, so a bad future timestamp cannot hide a valid
+reading. Both windows must be usable. Reset values may be ISO `resets_at`, epoch
 seconds or milliseconds, or `resets_in_seconds` relative to the event timestamp.
 The aliases `reset_at`, `reset_in_seconds` and `reset_after_seconds` are accepted.
 Directories are traversed without following symbolic links. Logs are streamed
@@ -70,7 +72,13 @@ one line at a time and their other contents are never printed.
 
 Thresholds live together in the exported `CONSTANTS` object.
 
-1. Snapshot age strictly greater than the maximum gives `stale`, including for urgent jobs.
+1. Snapshot age strictly greater than the maximum, or a timestamp more than five
+   minutes ahead of the clock, gives `stale`, including for urgent jobs. Exactly
+   five minutes ahead is allowed for clock skew (`CONSTANTS.maxFutureSkewMinutes`).
+   The CLI captures one clock value for session selection and the decision;
+   `--now` overrides both. The exported `fromSessions(dir, { now })` accepts the
+   same clock in epoch milliseconds. Reset times may legitimately be in the future
+   and are not subject to this event-timestamp check.
 2. Primary usage **>= 90%** or weekly usage **>= 97%** gives `hold`, including for urgent jobs.
 3. Weekly elapsed fraction is `clamp(1 - time_until_reset / window_duration, 0, 1)`.
    Expected usage is that fraction times 100. Usage **> expected + 10** points
@@ -106,8 +114,10 @@ folder with no usable event returns `stale` and exit 3.
 
 Run `npm test` here, or the repository's root `npm test` for all tools. Tests are
 offline and use fixed clocks, synthetic fixtures and temporary files. Paths use
-Node's path helpers and subprocess tests use no shell. Linux is validated;
-Windows execution has not been verified in this change.
+Node's path helpers and subprocess tests use no shell. Windows tests cover direct
+and directory-junction entry points, including drive-letter case. On Linux the
+same entry-point test uses a directory symbolic link. Canonical real paths identify
+the CLI entry point without running it when imported as a module.
 
 Memory from the OS is the requested total/free-memory estimate, not a platform
 specific commit-charge counter. This router uses supplied snapshots rather than

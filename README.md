@@ -181,6 +181,7 @@ lives in its own folder with its own README and tests, and most are a single fil
 <tr><td><a href="tools/guards/detached-run">detached-run</a></td><td>Starts a Windows job that outlives the session that started it, and never flashes a window on your screen.</td><td>Windows</td></tr>
 <tr><td colspan="3"><b>Spend your model allowance well</b></td></tr>
 <tr><td><a href="tools/routing/model-router">model-router</a></td><td>Picks which of your model plans should take the next task: the one about to lose the most unspent allowance.</td><td>nothing extra</td></tr>
+<tr><td><a href="tools/routing/codex-pace">codex-pace</a></td><td>Recommends cloud, local, hold or stale from Codex usage, weekly pace and local resources; rejects snapshots over five minutes ahead of the clock.</td><td>usage JSON or session logs</td></tr>
 <tr><td><a href="tools/routing/anthropic-pool">anthropic-pool</a></td><td>Spends Anthropic API credit from several keys, soonest to expire first, with hard caps. By default it uses Batch, Anthropic's half-price queue for work that can wait.</td><td>API keys</td></tr>
 <tr><td><a href="tools/routing/cli-rotator">cli-rotator</a></td><td>Runs a task on whichever of your command-line (CLI) agent accounts has quota left, and rests an account that hits its limit.</td><td>signed-in CLI accounts</td></tr>
 <tr><td colspan="3"><b>Hear back from background agents, and check what they did</b></td></tr>

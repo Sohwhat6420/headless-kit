@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import { createReadStream, readFileSync, readdirSync } from 'node:fs';
+import { createReadStream, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { totalmem, freemem, homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const CONSTANTS = Object.freeze({
   primaryHardCap: 90, secondaryHardCap: 97, weeklyPaceMargin: 10,
-  primarySoftCap: 75, memoryCap: 75, maxLocalRunning: 0, maxAgeMinutes: 30,
+  primarySoftCap: 75, memoryCap: 75, maxLocalRunning: 0, maxAgeMinutes: 30, maxFutureSkewMinutes: 5,
 });
 export const EXIT_CODES = Object.freeze({ cloud: 0, local: 10, hold: 20, stale: 3 });
 const MINUTE = 60_000;
@@ -49,7 +49,7 @@ function complete(s) {
 }
 
 /** Stream logs without relying on filename order or file modification times. */
-export async function fromSessions(dir) {
+export async function fromSessions(dir, { now = Date.now() } = {}) {
   let newest = null;
   async function walk(folder) {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
@@ -69,7 +69,8 @@ export async function fromSessions(dir) {
             if (!object(value) && !Array.isArray(value)) continue;
             if (object(value.rate_limits)) {
               const candidate = normaliseSnapshot({ ...value.rate_limits, taken_at: at });
-              if (complete(candidate) && (!newest || Date.parse(candidate.taken_at) > Date.parse(newest.taken_at))) newest = candidate;
+              if (complete(candidate) && Date.parse(candidate.taken_at) <= now + CONSTANTS.maxFutureSkewMinutes * MINUTE
+                && (!newest || Date.parse(candidate.taken_at) > Date.parse(newest.taken_at))) newest = candidate;
             }
             for (const child of Object.values(value)) if (child && typeof child === 'object') stack.push(child);
           }
@@ -97,6 +98,8 @@ export function decide(raw, options = {}) {
   };
   const finish = (decision, reason) => ({ ...result, decision, reason });
   if (s.taken_at === null) return finish('stale', 'No usable snapshot timestamp is available.');
+  if (Date.parse(s.taken_at) > now + CONSTANTS.maxFutureSkewMinutes * MINUTE)
+    return finish('stale', 'The usage snapshot is too far in the future; check the clock and refresh it before routing.');
   if (now - Date.parse(s.taken_at) > (options.maxAgeMinutes ?? CONSTANTS.maxAgeMinutes) * MINUTE)
     return finish('stale', 'The usage snapshot is too old; refresh it before routing.');
   if (result.primary_used !== null && result.primary_used >= CONSTANTS.primaryHardCap) return finish('hold', 'The primary hard cap has been reached.');
@@ -160,6 +163,7 @@ export async function main(argv) {
   try {
     const o = parseArgs(argv);
     if (o.help) { console.log(HELP); return 0; }
+    o.now ??= Date.now();
     let snapshot;
     if (o.usage) {
       let raw;
@@ -168,7 +172,7 @@ export async function main(argv) {
       if (!object(raw)) throw new Error('Usage input must be a JSON object.');
       snapshot = raw;
     } else {
-      try { snapshot = await fromSessions(o.fromSessions ?? join(homedir(), '.codex', 'sessions')); }
+      try { snapshot = await fromSessions(o.fromSessions ?? join(homedir(), '.codex', 'sessions'), o); }
       catch { throw new Error('Cannot read session input.'); }
     }
     const result = decide(snapshot, o);
@@ -181,4 +185,4 @@ export async function main(argv) {
   } catch (error) { console.error(error.message); return 2; }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = await main(process.argv.slice(2));
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) process.exitCode = await main(process.argv.slice(2));

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,60 @@ test('rule 1: stale strictly after max age, before hard caps; urgent cannot bypa
   s.taken_at = '2026-11-13T11:30:00Z';
   assert.equal(json([], s).data.decision, 'hold');
   assert.equal(json(['--max-age-minutes', '29'], s).data.decision, 'stale');
+});
+
+test('future snapshots allow five minutes of clock skew, then return stale even when urgent', () => {
+  const s = snapshot();
+  s.taken_at = new Date(options.now + CONSTANTS.maxFutureSkewMinutes * 60_000).toISOString();
+  assert.equal(json([], s).status, 0);
+  s.taken_at = new Date(Date.parse(s.taken_at) + 1).toISOString();
+  const r = json(['--urgent', '--max-age-minutes', '999999'], s);
+  assert.equal(r.status, 3);
+  assert.match(r.data.reason, /future/);
+  s.taken_at = '2099-01-01T00:00:00Z';
+  assert.equal(decide(s, options).decision, 'stale');
+});
+
+test('session selection skips future events before choosing the newest usable event', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'codex-pace-future-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, 'events.jsonl');
+  const event = (at, used) => JSON.stringify({ timestamp: at, payload: { rate_limits: snapshot(used) } });
+  const future = event('2099-01-01T00:00:00Z', 1);
+  const boundary = new Date(options.now + CONSTANTS.maxFutureSkewMinutes * 60_000).toISOString();
+  const tooFar = new Date(Date.parse(boundary) + 1).toISOString();
+  for (const lines of [[future, event(NOW, 21)], [event(NOW, 21), future]]) {
+    writeFileSync(file, lines.join('\n'));
+    assert.equal((await fromSessions(dir, options)).primary.used_percent, 21);
+    const r = run(['--from-sessions', dir, '--json']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).primary_used, 21);
+  }
+  writeFileSync(file, [event(boundary, 22), event(tooFar, 1), future].join('\n'));
+  assert.equal((await fromSessions(dir, options)).primary.used_percent, 22);
+  writeFileSync(file, future);
+  assert.equal(await fromSessions(dir, options), null);
+  assert.equal(run(['--from-sessions', dir, '--json']).status, 3);
+});
+
+test('CLI entry point works through a directory junction or symbolic link', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'codex-pace-entry-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const alias = join(dir, 'alias');
+  symlinkSync(join(here, '..'), alias, process.platform === 'win32' ? 'junction' : 'dir');
+  const linked = join(alias, 'codex-pace.mjs');
+  for (const entry of [script, linked, ...(process.platform === 'win32' ? [linked.replace(/^([A-Z]):/, (_, drive) => `${drive.toLowerCase()}:`)] : [])]) {
+    const help = spawnSync(process.execPath, [entry, '--help'], { encoding: 'utf8', windowsHide: true });
+    assert.ifError(help.error);
+    assert.equal(help.status, 0, help.stderr);
+    assert.match(help.stdout, /Usage: node codex-pace/);
+    const result = spawnSync(process.execPath, [entry, '--usage', '-', '--now', NOW, '--json'], {
+      input: JSON.stringify(snapshot()), encoding: 'utf8', windowsHide: true,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision, 'cloud');
+  }
 });
 
 test('rule 2: both hard cap boundaries, even urgent; just below is allowed urgent', () => {
@@ -118,7 +172,7 @@ test('missing or invalid fields are tolerated without guessing usage', () => {
 
 test('session walk picks newest usable event in older-named nested file and skips broken lines', async () => {
   const dir = join(here, 'fixtures', 'sessions');
-  const s = await fromSessions(dir);
+  const s = await fromSessions(dir, options);
   assert.equal(s.primary.used_percent, 21);
   assert.equal(s.taken_at, '2026-11-13T11:59:00.000Z');
   assert.equal(s.primary.resets_at, '2026-11-13T12:59:00.000Z');
@@ -158,7 +212,7 @@ test('usage file, session absolute reset event and default session source work',
   const sessions = join(dir, '.codex', 'sessions');
   mkdirSync(sessions, { recursive: true });
   writeFileSync(join(sessions, 'events.jsonl'), JSON.stringify({ timestamp: NOW, payload: { rate_limits: snapshot() } }));
-  assert.equal((await fromSessions(sessions)).primary.resets_at, '2026-11-13T13:00:00.000Z');
+  assert.equal((await fromSessions(sessions, options)).primary.resets_at, '2026-11-13T13:00:00.000Z');
   for (const args of [[], ['--from-sessions']]) {
     const r = spawnSync(process.execPath, [script, '--now', NOW, '--json', ...args], {
       env: { ...process.env, HOME: dir, USERPROFILE: dir }, encoding: 'utf8', windowsHide: true,
