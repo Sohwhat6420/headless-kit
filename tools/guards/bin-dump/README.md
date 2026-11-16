@@ -52,7 +52,7 @@ node bin-dump.mjs --restore <bin path> [--who <name>]
 ```
 <bin>/<YYYY-MM-DD>_<who>/<drive letter, UNC or ROOT>/<rest of the original path>
   e.g. C:\work\site\dist  ->  <bin>\2026-11-11_build-agent\C\work\site\dist
-       /home/me/tmp/x     ->  <bin>/2026-11-11_build-agent/ROOT/home/me/tmp/x
+       /home/<user>/tmp/x     ->  <bin>/2026-11-11_build-agent/ROOT/home/<user>/tmp/x
 ```
 
 A clash gets `~2`, `~3` and so on; nothing in the bin is ever overwritten. The bin holds `MANIFEST.tsv`
@@ -62,9 +62,9 @@ A clash gets `~2`, `~3` and so on; nothing in the bin is ever overwritten. The b
 stdout is one JSON object per run:
 
 ```json
-{"bin":"/home/me/RubbishBin","dryRun":false,"who":"build-agent",
- "moved":[{"original":"/home/me/site/dist","binPath":"/home/me/RubbishBin/2026-11-11_build-agent/ROOT/home/me/site/dist","bytes":48015}],
- "refused":[{"path":"/home/me/site/repo","reason":"is (or holds) a git repository or worktree; ..."}],"failed":[],"movedBytes":48015}
+{"bin":"/home/<user>/RubbishBin","dryRun":false,"who":"build-agent",
+ "moved":[{"original":"/home/<user>/site/dist","binPath":"/home/<user>/RubbishBin/2026-11-11_build-agent/ROOT/home/<user>/site/dist","bytes":48015}],
+ "refused":[{"path":"/home/<user>/site/repo","reason":"is (or holds) a git repository or worktree; ..."}],"failed":[],"movedBytes":48015}
 ```
 
 Human-readable lines go to stderr.

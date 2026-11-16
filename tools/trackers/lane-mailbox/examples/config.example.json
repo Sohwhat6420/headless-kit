@@ -1,0 +1,13 @@
+{
+  "_about": "lane-mailbox config: pass with --config or LANE_MAILBOX_CONFIG. Flags and environment variables win over these keys. Never put a token here; use tokenFile, GH_TOKEN or `gh auth login`.",
+  "repo": "example-owner/example-mailbox",
+  "branch": "main",
+  "inbox": "inbox",
+  "pollSec": 15,
+  "maxMin": 600,
+  "maxMail": 20,
+  "maxChars": 6000,
+  "maxPostChars": 3000,
+  "feed": "lanes.jsonl",
+  "tokenFile": null
+}

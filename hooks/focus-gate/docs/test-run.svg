@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="981" height="696" viewBox="0 0 981 696" role="img" aria-label="focus-gate: node --test">
+<rect x="0.5" y="0.5" width="980" height="695" rx="10" fill="#0d1117" stroke="#30363d"/>
+<path d="M10.5 0.5h960a10 10 0 0 1 10 10v22h-980v-22a10 10 0 0 1 10-10z" fill="#161b22"/>
+<circle cx="22" cy="17" r="6" fill="#ff5f57"/><circle cx="42" cy="17" r="6" fill="#febc2e"/><circle cx="62" cy="17" r="6" fill="#28c840"/>
+<text x="490.5" y="21" text-anchor="middle" fill="#7d8590" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif" font-size="13">focus-gate: node --test</text>
+<g font-family="ui-monospace,SFMono-Regular,Cascadia Mono,Consolas,Menlo,monospace" font-size="14" fill="#c9d1d9">
+<text x="20" y="66" xml:space="preserve"><tspan fill="#d2a8ff">$ </tspan><tspan fill="#79c0ff">node --test</tspan></text>
+<text x="20" y="86" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: an untouched starter file keeps the gate ON, with the short label and the next step</text>
+<text x="20" y="106" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: an open-and-save with the same size does not count as begun (still ON)</text>
+<text x="20" y="126" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: a real edit (new size, after the baseline) turns the gate OFF</text>
+<text x="20" y="146" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: an edit made before the baseline does not count</text>
+<text x="20" y="166" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: HOLD keeps it quiet (held line, not the gate); "settled" arms it and the gate is ON</text>
+<text x="20" y="186" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: a hold that runs out arms on its own; hold hours are capped at 3</text>
+<text x="20" y="206" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: fake clock past 48 h with no watched change turns the idle trigger ON</text>
+<text x="20" y="226" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> idle trigger ignores files outside the extension list, skipped folders and dot folders</text>
+<text x="20" y="246" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> control: evidence older than everyDays turns a recurring item back ON</text>
+<text x="20" y="266" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a recurring item with a watched file needs a fresh size change inside its window</text>
+<text x="20" y="286" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> deadlines file: open and due within 48 h is ON; later, past, closed, covered or evidenced entries are not</text>
+<text x="20" y="306" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> items: a future "from" is off unless due within 48 h; done is off; no dates means always active</text>
+<text x="20" y="326" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> snapshot records sizes for plain path strings, so a same-size save is ON and an edit is OFF</text>
+<text x="20" y="346" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a path without a known size counts on any save after the baseline; a folder counts any new file</text>
+<text x="20" y="366" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a folder item can name its own extensions (here Markdown)</text>
+<text x="20" y="386" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a missing file is not begun, and a file created after the snapshot counts</text>
+<text x="20" y="406" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> pause: a reason is required, the hours are capped at 4, and the gate returns when it ends</text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> pause by typing it: "pause focus gate 2h &lt;reason&gt;" pauses; without a reason nothing changes; resume ends it</text>
+<text x="20" y="446" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> a sentence ABOUT the pause phrase does not pause</text>
+<text x="20" y="466" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> system, agent and cross-session prompts, other events and unattended runs get no output</text>
+<text x="20" y="486" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> fails silent: no config, a corrupt config, garbage stdin, odd shapes</text>
+<text x="20" y="506" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> CLI: status is one JSON object; usage errors exit 2; a missing config exits 1; --help exits 0</text>
+<text x="20" y="526" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> speed: a cold decision over 3,000 files takes under 200 ms; the scan honours its caps</text>
+<text x="20" y="546" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> examples: config.example.json is valid and gates once its paths point somewhere real; settings snippet is valid</text>
+<text x="20" y="566" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> M3: a scan cut short by its caps neither fires the idle trigger nor is cached</text>
+<text x="20" y="586" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> M4: lock, backup, swap and partial-download files never count as work</text>
+<text x="20" y="606" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L2: a person typing an arrow is still a person; a labelled peer message is not</text>
+<text x="20" y="626" xml:space="preserve"><tspan fill="#3fb950" font-weight="700">✔</tspan> L3: deadline ids and titles are cleaned and clipped before they reach the context</text>
+<text x="20" y="646" xml:space="preserve">ℹ tests 28</text>
+<text x="20" y="666" xml:space="preserve">ℹ pass 28</text>
+<text x="20" y="686" xml:space="preserve">ℹ <tspan fill="#3fb950" font-weight="700">fail 0</tspan></text>
+</g>
+</svg>

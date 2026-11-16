@@ -1,0 +1,9 @@
+$ node tools/research/reddit-pull/reddit-pull.mjs --sub rust --after 2026-11-12 --max-pages 1 --out out
+rust posts: 100 (back to 2026-11-12)
+{"ok":true,"mode":"sub","out":"out","subs":[{"sub":"rust","posts":100,"files":["out\\rust.posts.json","out\\rust.titles.txt"]}],"failed_requests":0}
+$ echo $?
+0
+$ wc -c out/*
+124922 out/rust.posts.json
+ 16175 out/rust.titles.txt
+141097 total
