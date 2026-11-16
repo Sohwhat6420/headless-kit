@@ -4,6 +4,13 @@ All notable changes to headless-kit. Dates are UTC.
 
 ## Unreleased
 
+### Fixed
+
+- `codex-pace`: canonical CLI entry paths support Windows directory junctions;
+  snapshots over five minutes ahead of the clock return stale and session selection
+  skips such events before choosing the newest reading. Regression tests cover
+  the skew boundary, future-only and mixed logs, urgent routing and linked entry points.
+
 ### Added
 
 - **README:** a new front page. An animated hero (CSS only, light and dark, a still frame for reduced motion) that
