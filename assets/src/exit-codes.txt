@@ -3,6 +3,6 @@ $ node memory-gate.mjs
 $ echo $?
 0
 $ node lane-model-check.mjs --transcript examples/transcript.example.jsonl --expect model-large
-{"ok":false,"verdict":"mismatch","expected":"model-large","transcript":"/home/user/headless-kit/tools/guards/lane-model-check/examples/transcript.example.jsonl","lane":null,"session":null,"actual":"model-small-20261001","line":4}
+{"ok":false,"verdict":"mismatch","expected":"model-large","transcript":"/home/<user>/headless-kit/tools/guards/lane-model-check/examples/transcript.example.jsonl","lane":null,"session":null,"actual":"model-small-20261001","line":4}
 $ echo $?
 1

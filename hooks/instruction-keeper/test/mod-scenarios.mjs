@@ -7,7 +7,7 @@ import { createEngine } from './fake-engine.mjs'
 const SID = 'sess-1'
 const T0 = 1_800_000_000_000
 const DAY = 86_400_000
-const STATE = '/home/t/.claude/headless-kit/instruction-keeper'
+const STATE = '/fixtures/keeper-home/.claude/headless-kit/instruction-keeper'
 
 const answer = text => () => ({ isAnswered: true, text, usage: {} })
 const reads = async ($, n) => {
@@ -252,7 +252,7 @@ export const scenarios = [
       '## 1. prompt · 2026-10-19T08:06:57.893Z', '', '````text', 'first line', '', '```js', 'code', '```', '````', '',
       '## 2. mid-turn | 2026-10-19T08:10:00.000Z', '', '````text', 'second', '````', '',
     ].join('\n')
-    const k = createEngine(register, { files: { '/tmp/seed.md': md, '/home/t/seed.md': md } })
+    const k = createEngine(register, { files: { '/tmp/seed.md': md, '/fixtures/keeper-home/seed.md': md } })
     await k.$.session.start()
     assert.deepEqual(k.commands, ['keeper-seed'])
     const out = await k.$.command.run({ command: 'keeper-seed', args: '"/tmp/seed.md"' })

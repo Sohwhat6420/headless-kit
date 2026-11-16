@@ -53,7 +53,7 @@ node lane-model-check.mjs (--transcript <file.jsonl> | --session <id>)
 stdout is one JSON object:
 
 ```json
-{"ok":false,"verdict":"mismatch","expected":"model-small","transcript":"/home/me/.claude/projects/p/abc.jsonl","lane":null,"session":"abc",
+{"ok":false,"verdict":"mismatch","expected":"model-small","transcript":"/home/<user>/.claude/projects/p/abc.jsonl","lane":null,"session":"abc",
  "actual":"model-small-20261001","turns":3,"models":[{"model":"model-small-20261001","turns":2,"matches":true},{"model":"model-large-20261001","turns":1,"matches":false}],
  "firstMismatch":"model-large-20261001","firstMismatchLine":7}
 ```

@@ -135,7 +135,7 @@ test('redaction strips cookie values; error classes, including the ambiguous yt-
 test('chromiumPath: installed Chrome or Edge and non-Playwright paths refused; a bundled path accepted', () => {
   assert.equal(checkChromiumPath(null).ok, true);
   for (const p of ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/home/u/bin/chrome']) assert.equal(checkChromiumPath(p).ok, false, p);
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/opt/local/bin/chrome']) assert.equal(checkChromiumPath(p).ok, false, p);
   const d = join(tmp(), 'ms-playwright', 'chromium_headless_shell-1'); mkdirSync(d, { recursive: true });
   const exe = join(d, 'headless_shell'); writeFileSync(exe, '');
   assert.equal(checkChromiumPath(exe).ok, true);
