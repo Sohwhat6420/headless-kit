@@ -1,0 +1,12 @@
+$ node reddit-pull.mjs --sub rust --after 2026-11-12 --comments --max-pages 2 --out ./out
+rust posts: 100 (back to 2026-11-12)
+rust comments: 100 (back to 2026-11-13)
+rust comments: 200 (back to 2026-11-13)
+{"ok":true,"mode":"sub","out":"./out","subs":[{"sub":"rust","posts":104,"comments":200,"files":["out/rust.posts.json","out/rust.titles.txt","out/rust.comments.json"]}],"failed_requests":0}
+$ echo $?
+0
+$ wc -c out/*
+ 84107 out/rust.comments.json
+131775 out/rust.posts.json
+ 16868 out/rust.titles.txt
+232750 total

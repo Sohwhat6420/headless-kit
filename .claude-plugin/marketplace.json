@@ -8,7 +8,7 @@
     {
       "name": "headless-kit",
       "source": "./",
-      "description": "Command hooks (plan-depth, dismissal-watch, presence, session-card-push) and the /away and /back skills."
+      "description": "Command hooks (plan-depth, dismissal-watch, presence, session-card-push, focus-gate) and the /away and /back skills."
     },
     {
       "name": "instruction-keeper",
