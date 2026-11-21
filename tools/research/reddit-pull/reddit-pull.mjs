@@ -43,6 +43,11 @@ const HELP = `reddit-pull: public Reddit posts and comments from the Arctic Shif
 
 Env: REDDIT_PULL_UA sets the User-Agent; REDDIT_PULL_RETRY_MS the retry step (default 2500). One JSON line on stdout; progress on stderr.`;
 
+// Names that become file names: checked so a subreddit or post id can never point outside --out (path traversal,
+// OWASP LLM06). An agent often copies these from fetched posts, which are untrusted.
+export const SUB_RE = /^[A-Za-z0-9_]{1,21}$/;
+export const THREAD_RE = /^(?:t3_)?[A-Za-z0-9]{1,12}$/;
+
 export function parseArgs(args) {
   const opt = { subs: [], comments: false, maxPages: 30, minScore: -Infinity, base: DEFAULT_BASE };
   for (let i = 0; i < args.length; i++) {
@@ -66,6 +71,8 @@ export function parseArgs(args) {
     else throw new Error(`unknown argument ${a}`);
   }
   if (!Number.isFinite(opt.maxPages) || opt.maxPages < 1) throw new Error('--max-pages must be a positive number');
+  for (const sub of opt.subs) if (!SUB_RE.test(sub)) throw new Error(`--sub must be a subreddit name (letters, digits, _), not ${JSON.stringify(sub.slice(0, 40))}`);
+  if (opt.thread !== undefined && !THREAD_RE.test(opt.thread)) throw new Error(`--thread must be a post id such as 1abc2de, not ${JSON.stringify(String(opt.thread).slice(0, 40))}`);
   return opt;
 }
 
@@ -176,7 +183,9 @@ export async function run(opt) {
       .sort((a, b) => b.score - a.score);
     const files = [path.join(opt.out, `${sub}.posts.json`), path.join(opt.out, `${sub}.titles.txt`)];
     fs.writeFileSync(files[0], JSON.stringify(posts, null, 1));
-    fs.writeFileSync(files[1], posts.map((p) => [p.t, p.score, p.n, (p.flair || '-').slice(0, 14), p.title, p.link].join(' | ')).join('\n'));
+    // One line per post: a title holding a newline must not start a forged row.
+    const line = (v) => String(v ?? '').replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, ' ');
+    fs.writeFileSync(files[1], posts.map((p) => [p.t, p.score, p.n, line((p.flair || '-').slice(0, 14)), line(p.title), p.link].join(' | ')).join('\n'));
     let nComments = 0;
     if (opt.comments) {
       const comments = (await pullWindow(opt, stats, 'comments', sub)).map(pickComment)
