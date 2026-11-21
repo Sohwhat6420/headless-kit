@@ -43,6 +43,13 @@ test('parseArgs reads flags and rejects unknown ones', () => {
   assert.throws(() => parseArgs(['--sub']), /needs a value/);
 });
 
+test('parseArgs refuses names that would write outside --out', () => {
+  for (const bad of ['../../x', '..', 'a/b', 'a\\b', 'C:x', '', 'a'.repeat(22)]) assert.throws(() => parseArgs(['--sub', bad]), /--sub must be/);
+  for (const bad of ['../../../.claude/settings', 'p1/../..', 'x.json', '']) assert.throws(() => parseArgs(['--thread', bad]), /--thread must be/);
+  assert.equal(parseArgs(['--thread', 't3_1abc2de']).thread, 't3_1abc2de');
+  assert.deepEqual(parseArgs(['--sub', 'LocalLLaMA', '--sub', 'u_someone']).subs, ['LocalLLaMA', 'u_someone']);
+});
+
 test('flattenTree tags depth and skips "more" nodes', () => {
   const c = (id, kids) => ({ kind: 't1', data: { id, created_utc: 1_700_000_000, link_id: 't3_p', body: id, replies: kids ? { data: { children: kids } } : '' } });
   const rows = flattenTree([c('a', [c('b', [c('c')])]), { kind: 'more', data: {} }, c('d')]);

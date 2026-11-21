@@ -18,6 +18,10 @@ All notable changes to headless-kit. Dates are UTC.
 
 ### Fixed
 
+- `reddit-pull`: `--sub` and `--thread` became file names unchecked, so a name such as `../../x` (often copied from
+  fetched, untrusted posts) could write outside `--out`. Both are now checked (subreddit: 1 to 21 of letters, digits
+  and `_`; post id: an optional `t3_` and 1 to 12 letters and digits) and anything else is a usage error. Titles in
+  `<sub>.titles.txt` are kept on one line. Found by the OWASP LLM Top 10 audit of 21 Nov 2026.
 - `reddit-pull` README: the try-it `cd` path now includes `research/`.
 
 ### Added (tools)
